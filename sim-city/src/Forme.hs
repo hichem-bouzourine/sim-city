@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
+{-# OPTIONS_GHC -Wno-missing-signatures #-}
 module Forme where
 
 data  Coord = C{
@@ -72,4 +73,24 @@ forme4 = HSegement (C 3 3) 5
 -- >>> collision_approx forme2 forme3
 -- True
 -- >>> collision_approx forme4 forme1
+-- False
+
+
+-- une fonction adjacentes :: Forme -> Forme -> Bool qui prend en entr´ee deux formes et d´ecide si les deux formes sont adjacentes 
+-- (c’est-`a-dire si elles se touchent sans se superposer).
+adjacentes :: Forme -> Forme -> Bool
+adjacentes f1 f2 = adjacentes' f1 f2 || adjacentes' f2 f1
+
+adjacentes' :: Forme -> Forme -> Bool
+adjacentes' f1 f2 = let (y1, y2, x1, x2) = limites f1
+                    in adjacent (C x1 y1) f2 
+                    || adjacent (C x2 y2) f2 
+                    || adjacent (C x1 y2) f2 
+                    || adjacent (C x2 y1) f2
+formeAdj1 = Rectangle (C (-2) 6) 5 5
+formeAdj2 = Rectangle (C 1 1) 5 5
+
+-- >>> adjacentes formeAdj1 formeAdj2
+-- True
+-- >>> adjacentes (Rectangle (C (-5) (-4)) 5 5) (Rectangle (C 1 1) 5 5)
 -- False
