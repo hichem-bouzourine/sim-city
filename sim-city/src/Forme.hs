@@ -29,19 +29,18 @@ forme3 = Rectangle (C 1 1) 5 5
 
 appartient :: Coord -> Forme -> Bool
 appartient (C x y) (HSegement (C xx yy) l) = (x <= x+l) && (x >= xx) && (y == yy)
-appartient (C x y) (VSegement (C xx yy) l) = (x == xx) && (y >= yy) && (y <= y-l)
-appartient (C x y) (Rectangle (C xx yy) l h) =(x >= xx) && (x <= x+l) && (y >= yy) && (y <= y+h)
-
+appartient (C x y) (VSegement (C xx yy) l) = (x == xx) && (y <= yy) && (y >= y-l)
+appartient (C x y) (Rectangle (C xx yy) l h) =(x >= xx) && (x <= x+l) && (y <= yy) && (y >= y+h)
 
 
 adjacent ::Coord -> Forme -> Bool
-adjacent (C cx cy) (HSegement (C x y) l) = (cy == y) && ((cx >= x) || (cx <= x+l))
-adjacent (C cx cy) (VSegement (C x y) l) = (cx == x) && ((cy >= y) || (cy == y-l))
-adjacent (C cx cy) (Rectangle (C x y) w h) =
-       (cx == x) && ((cy > y) && (cy < y-h))
-    || (cx == x+w) && ((cy > y) && (cy < y-h))
-    || (cy == y) && ((cx > x) && (cx < x+w))
-    || (cy == y-h) && ((cx > x) && (cx < x+w))
+adjacent (C x y) (HSegement (C xx yy) l) = (y == yy) && ((x >=xx) && (x <=xx+l))
+adjacent (C x y) (VSegement (C xx yy) l) = (x == xx) && ((y <= yy) && (y >= yy-l))
+adjacent (C x y) (Rectangle (C xx yy) l h) =
+       (x == xx) && ((y <= yy) && (y >= yy-h))
+    || (x == xx + l) && ((y <= yy) && (y >= yy - h))
+    || (y == yy) && ((x >= xx) && (x <= xx + l))
+    || (y == yy - h) && ((x >= xx) && (x <= xx + l))
 
 -- >>> adjacent coord1 forme1
 -- False
