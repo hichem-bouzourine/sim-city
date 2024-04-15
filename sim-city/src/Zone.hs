@@ -1,12 +1,19 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use newtype instead of data" #-}
 module Zone where
-import Forme 
-
+import Forme
+import Citoyen
+import Batiment
 import Data.Map (Map)
 import qualified Data.Map as Map
 
 -- Définitions des zones et bâtiments
-data Batiment = Batiment Int deriving (Show, Eq)
-data Zone = Eau Forme | Route Forme | ZR Forme [Batiment] | ZI Forme [Batiment] | ZC Forme [Batiment] | Admin Forme Batiment deriving (Show, Eq)
+data Zone = Eau Forme
+ | Route Forme
+ | ZR Forme [Batiment]
+ | ZI Forme [Batiment]
+ | ZC Forme [Batiment] 
+ | Admin Forme Batiment
 
 zoneForme :: Zone -> Forme
 zoneForme (Eau f) = f
@@ -18,18 +25,13 @@ zoneForme (Admin f _) = f
 
 -- Identifiants pour les éléments de la ville
 newtype ZoneId = ZoneId Int deriving (Eq, Ord)
-newtype BatId = BatId Int deriving (Eq, Ord)
-newtype CitId = CitId String deriving (Eq, Ord)
+
 
 -- État de la ville
 data Ville = Ville {
     viZones :: Map ZoneId Zone,
     viCit :: Map CitId Citoyen
 }
-
-data Citoyen = Citoyen {
-    ciNom :: CitId
-} 
 
 -- Collision entre formes
 collision :: Forme -> Forme -> Bool
@@ -40,7 +42,7 @@ prop_ville_sansCollision :: Ville -> Bool
 prop_ville_sansCollision (Ville zs _) = Map.foldrWithKey aux True zs
   where
     aux _ _ False = False
-    aux key z acc = acc && Map.foldr (\z' acc' -> acc' && (not $ collision (zoneForme z) (zoneForme z'))) True (Map.delete key zs)
+    aux key z acc = acc && Map.foldr (\z' acc' -> acc' && not (collision (zoneForme z) (zoneForme z'))) True (Map.delete key zs)
 
 -- Propriété que chaque zone est adjacente à une route
 prop_ville_routesAdj :: Ville -> Bool
@@ -52,17 +54,17 @@ prop_ville_routesAdj (Ville zones _) = Map.foldrWithKey (\_ zone acc -> acc && i
         _ -> any (zoneAdjacent zone) (Map.elems zonesMap)
 
     zoneAdjacent :: Zone -> Zone -> Bool
-    zoneAdjacent z1 route@(Route f2) = any (\coord -> adjacent coord (zoneForme z1)) (boundingCoords  f2)
+    zoneAdjacent z1 (Route f2) = any (\coord -> adjacent coord (zoneForme z1)) (boundingCoords  f2)
     zoneAdjacent _ _ = False
 
 
 -- Fonction qui génère les coordonnées des deux extrémités d'un segment en utilisant `limites`
 boundingCoords :: Forme -> [Coord]
 boundingCoords forme = case forme of
-    HSegment start l -> 
+    HSegment _ _ ->
         let (n, _, w, e) = limites forme
         in [C w n, C e n]  -- Coordonnées des extrémités ouest et est
-    VSegment start l -> 
+    VSegment _ _ ->
         let (n, s, w, _) = limites forme
         in [C w n, C w s]  -- Coordonnées des extrémités nord et sud
     _ -> []  -- Pour les rectangles ou autres formes non segmentées
@@ -78,20 +80,22 @@ construit (Ville zones citoyens) zone zid =
 
 -- Preconditions pour la fonction construit
 prop_pre_construit :: Ville -> Zone -> ZoneId -> Bool
-prop_pre_construit (Ville zones _) zone zid = 
-    not (Map.member zid zones) && -- L'id de la zone n'est pas déjà utilisé    
-    all (\(_, z') -> not (collision (zoneForme zone) (zoneForme z'))) (Map.toList zones) &&  -- La nouvelle zone ne doit pas entrer en collision avec les zones existantes
+prop_pre_construit (Ville zones _) zone zid =
+    not (Map.member zid zones) && -- L'id de la zone n'est pas déjà utilisé     -- L'id de la zone n'est pas déjà utilisé    
+     -- L'id de la zone n'est pas déjà utilisé    
+    all (\(_, z') -> not (collision (zoneForme zone) (zoneForme z'))) (Map.toList zones) &&  -- La nouvelle zone ne doit pas entrer en collision avec les zones existantes  -- La nouvelle zone ne doit pas entrer en collision avec les zones existantes
     case zone of
         Route _ -> True  -- Les routes peuvent être placées n'importe où
-        _ -> any (\ z' -> zoneAdjacent zone z') (Map.elems zones)  -- Les autres zones doivent être adjacentes à une route
+        _ -> any (zoneAdjacent zone) (Map.elems zones)  -- Les autres zones doivent être adjacentes à une route
         where
             zoneAdjacent :: Zone -> Zone -> Bool
-            zoneAdjacent z1 route@(Route f2) = any (\coord -> adjacent coord (zoneForme z1)) (boundingCoords  f2)
+            zoneAdjacent z1 (Route f2) = any (\coord -> adjacent coord (zoneForme z1)) (boundingCoords  f2)
             zoneAdjacent _ _ = False
 
 
 -- Postconditions pour la fonction construit
 prop_post_construit :: Ville -> Zone -> ZoneId -> Ville -> Bool
-prop_post_construit (Ville zones _) zone zid (Ville zones' _) = 
-    Map.member zid zones' &&  -- La zone a bien été ajoutée
+prop_post_construit (Ville zones _) _ zid (Ville zones' _) =
+    Map.member zid zones' &&  -- La zone a bien été ajoutée  -- La zone a bien été ajoutée  -- La zone a bien été ajoutée  -- La zone a bien été ajoutée
+      -- La zone a bien été ajoutée
     Map.size zones' == Map.size zones + 1  -- Il y a une zone de plus

@@ -1,4 +1,10 @@
-module Forme where 
+module Forme 
+    ( Coord(..)
+    , Forme(..)
+    , limites
+    , appartient
+    , adjacent
+    ) where
 
 data Coord = C {
     cx :: Int,
