@@ -25,7 +25,7 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Forme
   other-modules:
       Paths_sim_city
   autogen-modules:
