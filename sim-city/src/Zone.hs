@@ -26,8 +26,8 @@ zoneForme (Admin f _) = f
 -- Invariant de forme pour les zone routiers 
 prop_inv_ZoneRouteForme :: Zone -> Bool
 prop_inv_ZoneRouteForme (Route f) = case f of
-    HSegment _ _ -> True
-    VSegment _ _ -> True
+    HSegement _ _ -> True
+    VSegement _ _ -> True
     _ -> False
 prop_inv_ZoneRouteForme _ = True
 

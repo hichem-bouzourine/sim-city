@@ -42,10 +42,10 @@ prop_ville_routesAdj (Ville zones _) = Map.foldrWithKey (\_ zone acc -> acc && i
 -- Fonction qui génère les coordonnées des deux extrémités d'un segment en utilisant `limites`
 boundingCoords :: Forme -> [Coord]
 boundingCoords forme = case forme of
-    HSegment _ _ ->
+    HSegement _ _ ->
         let (n, _, w, e) = limites forme
         in [C w n, C e n]  -- Coordonnées des extrémités ouest et est
-    VSegment _ _ ->
+    VSegement _ _ ->
         let (n, s, w, _) = limites forme
         in [C w n, C w s]  -- Coordonnées des extrémités nord et sud
     _ -> []  -- Pour les rectangles ou autres formes non segmentées
