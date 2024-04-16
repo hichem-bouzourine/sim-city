@@ -28,6 +28,7 @@ library
       Batiment
       Citoyen
       Forme
+      Ville
       Zone
   other-modules:
       Paths_sim_city

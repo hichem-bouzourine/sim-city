@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 module Zone where
 import Forme
-import Citoyen
 import Batiment
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -12,7 +12,7 @@ data Zone = Eau Forme
  | Route Forme
  | ZR Forme [Batiment]
  | ZI Forme [Batiment]
- | ZC Forme [Batiment] 
+ | ZC Forme [Batiment]
  | Admin Forme Batiment
 
 zoneForme :: Zone -> Forme
@@ -23,79 +23,52 @@ zoneForme (ZI f _) = f
 zoneForme (ZC f _) = f
 zoneForme (Admin f _) = f
 
+-- Invariant de forme pour les zone routiers 
+prop_inv_ZoneRouteForme :: Zone -> Bool
+prop_inv_ZoneRouteForme (Route f) = case f of
+    HSegment _ _ -> True
+    VSegment _ _ -> True
+    _ -> False
+prop_inv_ZoneRouteForme _ = True
+
+-- Invariant de l'appartennace pour des batiments au zone
+-- Les cabanes/ateliers/epiceries ne se trouvent que dans les zones r ́esidentielles/industrielles/commerciales.
+prop_inv_zoneBatiment :: Zone -> Bool
+prop_inv_zoneBatiment (Admin _ batiment) = case batiment of
+    Cabane {} -> False
+    Atelier {} -> False
+    Epicerie {} -> False
+    Commissariat _ _ -> True
+prop_inv_zoneBatiment _ = True
+
+-- Invariant de zone
+prop_inv_Zone :: Zone -> Bool
+prop_inv_Zone z = prop_inv_ZoneRouteForme z && prop_inv_zoneBatiment z
+
 -- Identifiants pour les éléments de la ville
 newtype ZoneId = ZoneId Int deriving (Eq, Ord)
 
+-- Construit une zone en ajoutant un bâtiment
+construitZone :: Zone -> Batiment -> Zone
+construitZone (ZR f bs) b = ZR f (b:bs)
+construitZone (ZI f bs) b = ZI f (b:bs)
+construitZone (ZC f bs) b = ZC f (b:bs)
+construitZone (Admin f _) b = Admin f b
+construitZone _ _ = error "Impossible de construire un bâtiment cette zone: "
 
--- État de la ville
-data Ville = Ville {
-    viZones :: Map ZoneId Zone,
-    viCit :: Map CitId Citoyen
-}
+-- preconditions pour la fonction construitZone
+prop_pre_construitZone :: Zone -> Batiment -> Bool
+prop_pre_construitZone (Eau _) _ = False
+prop_pre_construitZone (Route _) _ = False
+prop_pre_construitZone  (ZR _ bs) b = b `notElem` bs
+prop_pre_construitZone  (ZI _ bs) b = b `notElem` bs
+prop_pre_construitZone  (ZC _ bs) b = b `notElem` bs
+prop_pre_construitZone  (Admin _ _) _ = True
 
--- Collision entre formes
-collision :: Forme -> Forme -> Bool
-collision _ _ = False  -- À redéfinir selon les règles de collision de votre jeu
-
--- Propriété de non-collision entre zones
-prop_ville_sansCollision :: Ville -> Bool
-prop_ville_sansCollision (Ville zs _) = Map.foldrWithKey aux True zs
-  where
-    aux _ _ False = False
-    aux key z acc = acc && Map.foldr (\z' acc' -> acc' && not (collision (zoneForme z) (zoneForme z'))) True (Map.delete key zs)
-
--- Propriété que chaque zone est adjacente à une route
-prop_ville_routesAdj :: Ville -> Bool
-prop_ville_routesAdj (Ville zones _) = Map.foldrWithKey (\_ zone acc -> acc && isAdjacentToRoad zone zones) True zones
-  where
-    isAdjacentToRoad :: Zone -> Map ZoneId Zone -> Bool
-    isAdjacentToRoad zone zonesMap = case zone of
-        Route _ -> True  -- Les routes sont toujours ok
-        _ -> any (zoneAdjacent zone) (Map.elems zonesMap)
-
-    zoneAdjacent :: Zone -> Zone -> Bool
-    zoneAdjacent z1 (Route f2) = any (\coord -> adjacent coord (zoneForme z1)) (boundingCoords  f2)
-    zoneAdjacent _ _ = False
-
-
--- Fonction qui génère les coordonnées des deux extrémités d'un segment en utilisant `limites`
-boundingCoords :: Forme -> [Coord]
-boundingCoords forme = case forme of
-    HSegment _ _ ->
-        let (n, _, w, e) = limites forme
-        in [C w n, C e n]  -- Coordonnées des extrémités ouest et est
-    VSegment _ _ ->
-        let (n, s, w, _) = limites forme
-        in [C w n, C w s]  -- Coordonnées des extrémités nord et sud
-    _ -> []  -- Pour les rectangles ou autres formes non segmentées
-
--- Un invariant pour ville
-prop_inv_Ville :: Ville -> Bool
-prop_inv_Ville v = prop_ville_sansCollision v && prop_ville_routesAdj v
-
--- Fonction qui construit une ville en ajoutant une zone
-construit :: Ville -> Zone -> ZoneId -> Ville
-construit (Ville zones citoyens) zone zid =
-    Ville (Map.insert zid zone zones) citoyens
-
--- Preconditions pour la fonction construit
-prop_pre_construit :: Ville -> Zone -> ZoneId -> Bool
-prop_pre_construit (Ville zones _) zone zid =
-    not (Map.member zid zones) && -- L'id de la zone n'est pas déjà utilisé     -- L'id de la zone n'est pas déjà utilisé    
-     -- L'id de la zone n'est pas déjà utilisé    
-    all (\(_, z') -> not (collision (zoneForme zone) (zoneForme z'))) (Map.toList zones) &&  -- La nouvelle zone ne doit pas entrer en collision avec les zones existantes  -- La nouvelle zone ne doit pas entrer en collision avec les zones existantes
-    case zone of
-        Route _ -> True  -- Les routes peuvent être placées n'importe où
-        _ -> any (zoneAdjacent zone) (Map.elems zones)  -- Les autres zones doivent être adjacentes à une route
-        where
-            zoneAdjacent :: Zone -> Zone -> Bool
-            zoneAdjacent z1 (Route f2) = any (\coord -> adjacent coord (zoneForme z1)) (boundingCoords  f2)
-            zoneAdjacent _ _ = False
-
-
--- Postconditions pour la fonction construit
-prop_post_construit :: Ville -> Zone -> ZoneId -> Ville -> Bool
-prop_post_construit (Ville zones _) _ zid (Ville zones' _) =
-    Map.member zid zones' &&  -- La zone a bien été ajoutée  -- La zone a bien été ajoutée  -- La zone a bien été ajoutée  -- La zone a bien été ajoutée
-      -- La zone a bien été ajoutée
-    Map.size zones' == Map.size zones + 1  -- Il y a une zone de plus
+-- PostConditions pour la fonction construitZone
+prop_post_construitZone :: Zone -> Zone -> Batiment -> Bool
+prop_post_construitZone (ZR f bs) (ZR f' bs') b = f == f' && b `elem` bs' && length bs' == length bs + 1
+prop_post_construitZone (ZI f bs) (ZI f' bs') b = f == f' && b `elem` bs' && length bs' == length bs + 1
+prop_post_construitZone (ZC f bs) (ZC f' bs') b = f == f' && b `elem` bs' && length bs' == length bs + 1
+prop_post_construitZone (Admin f _) (Admin f' b') b = f == f' && b == b'
+prop_post_construitZone _ _ _ = False
