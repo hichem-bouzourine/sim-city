@@ -1,7 +1,7 @@
 module Main (main) where
 
-import Forme 
+import Forme
 
 main :: IO ()
 main = do
-  putStrLn "Hello, Haskell!"    
+    putStrLn "Hello, Haskell!"    
