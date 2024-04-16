@@ -3,8 +3,8 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 module Forme where
 
-data  Coord = C{
-    cx :: Int ,
+data Coord = C {
+    cx :: Int,
     cy :: Int
 } deriving (Show, Eq)
 

@@ -48,6 +48,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - sim-city
+    - containers
 
 tests:
   sim-city-test:
@@ -59,3 +60,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - sim-city
+    - containers
