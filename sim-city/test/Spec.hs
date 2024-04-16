@@ -1,2 +1,8 @@
+import Test.Hspec ( hspec )
+
+import FormeSpec as FS
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = hspec $ do
+    -- FormeSpec
+    FS.formeSpec
