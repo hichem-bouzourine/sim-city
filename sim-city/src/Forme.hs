@@ -1,9 +1,10 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
+{-# OPTIONS_GHC -Wno-missing-signatures #-}
 module Forme where
 
-data  Coord = C{
-    cx :: Int ,
+data Coord = C {
+    cx :: Int,
     cy :: Int
 } deriving (Show, Eq)
 
@@ -29,19 +30,18 @@ forme3 = Rectangle (C 1 1) 5 5
 
 appartient :: Coord -> Forme -> Bool
 appartient (C x y) (HSegement (C xx yy) l) = (x <= x+l) && (x >= xx) && (y == yy)
-appartient (C x y) (VSegement (C xx yy) l) = (x == xx) && (y >= yy) && (y <= y-l)
-appartient (C x y) (Rectangle (C xx yy) l h) =(x >= xx) && (x <= x+l) && (y >= yy) && (y <= y+h)
-
+appartient (C x y) (VSegement (C xx yy) l) = (x == xx) && (y <= yy) && (y >= y-l)
+appartient (C x y) (Rectangle (C xx yy) l h) =(x >= xx) && (x <= x+l) && (y <= yy) && (y >= y+h)
 
 
 adjacent ::Coord -> Forme -> Bool
-adjacent (C cx cy) (HSegement (C x y) l) = (cy == y) && ((cx >= x) || (cx <= x+l))
-adjacent (C cx cy) (VSegement (C x y) l) = (cx == x) && ((cy >= y) || (cy == y-l))
-adjacent (C cx cy) (Rectangle (C x y) w h) =
-       (cx == x) && ((cy > y) && (cy < y-h))
-    || (cx == x+w) && ((cy > y) && (cy < y-h))
-    || (cy == y) && ((cx > x) && (cx < x+w))
-    || (cy == y-h) && ((cx > x) && (cx < x+w))
+adjacent (C x y) (HSegement (C xx yy) l) = (y == yy) && ((x >=xx) && (x <=xx+l))
+adjacent (C x y) (VSegement (C xx yy) l) = (x == xx) && ((y <= yy) && (y >= yy-l))
+adjacent (C x y) (Rectangle (C xx yy) l h) =
+       (x == xx) && ((y <= yy) && (y >= yy-h))
+    || (x == xx + l) && ((y <= yy) && (y >= yy - h))
+    || (y == yy) && ((x >= xx) && (x <= xx + l))
+    || (y == yy - h) && ((x >= xx) && (x <= xx + l))
 
 -- >>> adjacent coord1 forme1
 -- False
@@ -73,4 +73,24 @@ forme4 = HSegement (C 3 3) 5
 -- >>> collision_approx forme2 forme3
 -- True
 -- >>> collision_approx forme4 forme1
+-- False
+
+
+-- une fonction adjacentes :: Forme -> Forme -> Bool qui prend en entr´ee deux formes et d´ecide si les deux formes sont adjacentes 
+-- (c’est-`a-dire si elles se touchent sans se superposer).
+adjacentes :: Forme -> Forme -> Bool
+adjacentes f1 f2 = adjacentes' f1 f2 || adjacentes' f2 f1
+
+adjacentes' :: Forme -> Forme -> Bool
+adjacentes' f1 f2 = let (y1, y2, x1, x2) = limites f1
+                    in adjacent (C x1 y1) f2 
+                    || adjacent (C x2 y2) f2 
+                    || adjacent (C x1 y2) f2 
+                    || adjacent (C x2 y1) f2
+formeAdj1 = Rectangle (C (-2) 6) 5 5
+formeAdj2 = Rectangle (C 1 1) 5 5
+
+-- >>> adjacentes formeAdj1 formeAdj2
+-- True
+-- >>> adjacentes (Rectangle (C (-5) (-4)) 5 5) (Rectangle (C 1 1) 5 5)
 -- False
