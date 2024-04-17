@@ -13,7 +13,6 @@ data Batiment =
     | Epicerie Forme Coord Int [CitId]
     | Commissariat Forme Coord
 
-
 -- Instaciation EQ pour les Batiments
 instance Eq Batiment where
     (==) :: Batiment -> Batiment -> Bool
@@ -23,27 +22,52 @@ instance Eq Batiment where
     (Commissariat f1 c1) == (Commissariat f2 c2) = f1 == f2 && c1 == c2
     _ == _ = False
 
--- invariants-- Invariant: l'entrée des bâtiments n'est pas dans leur forme
+-- Getters de forme pour les Batiments
+batimentForme :: Batiment -> Forme
+batimentForme (Cabane f _ _ _) = f
+batimentForme (Atelier f _ _ _) = f
+batimentForme (Epicerie f _ _ _) = f
+batimentForme (Commissariat f _) = f
+
+-- Getters de coordonnées de l'entrée pour les Batiments
+batimentEntree :: Batiment -> Coord
+batimentEntree (Cabane _ c _ _) = c
+batimentEntree (Atelier _ c _ _) = c
+batimentEntree (Epicerie _ c _ _) = c
+batimentEntree (Commissariat _ c) = c
+
+-- Getters de capacité pour les Batiments
+batimentCapacite :: Batiment -> Int
+batimentCapacite (Cabane _ _ cap _) = cap
+batimentCapacite (Atelier _ _ cap _) = cap
+batimentCapacite (Epicerie _ _ cap _) = cap
+batimentCapacite (Commissariat _ _) = 0
+
+-- Getters de citoyens pour les Batiments
+batimentCitoyens :: Batiment -> [CitId]
+batimentCitoyens (Cabane _ _ _ l) = l
+batimentCitoyens (Atelier _ _ _ l) = l
+batimentCitoyens (Epicerie _ _ _ l) = l
+batimentCitoyens (Commissariat _ _) = []
+
+-- invariants-- Invariant: l'entrée des bâtiments n'est pas dans leur forme et est adjacente à leur forme
 prop_inv_entre_batiment :: Batiment -> Bool
-prop_inv_entre_batiment (Cabane f c _ _) = not (appartient c f)
-prop_inv_entre_batiment (Atelier f c _ _) = not (appartient c f)
-prop_inv_entre_batiment (Epicerie f c _ _) = not (appartient c f)
-prop_inv_entre_batiment (Commissariat f c) = not (appartient c f)
+prop_inv_entre_batiment b = 
+    let (c, f) = (batimentEntree b ,batimentForme b) in not (appartient c f) && adjacent c f
 
 -- Invariant: le nombre de citoyens d'un bâtiment est inférieur à la capacité du bâtiment
 prop_inv_capacite_batiment :: Batiment -> Bool
-prop_inv_capacite_batiment (Cabane _ _ c l) = c >= length l
-prop_inv_capacite_batiment (Atelier _ _ c l) = c >= length l
-prop_inv_capacite_batiment (Epicerie _ _ c l) = c >= length l
-prop_inv_capacite_batiment _ = True
+prop_inv_capacite_batiment (Commissariat _ _) = True
+prop_inv_capacite_batiment batiment = length (batimentCitoyens batiment) <= batimentCapacite batiment
 
 -- Invariant: les citoyens d'un bâtiment sont distincts
 prop_inv_citoyens_distincts :: Batiment -> Bool
-prop_inv_citoyens_distincts (Cabane _ _ _ l) = length l == Set.size (Set.fromList l)
-prop_inv_citoyens_distincts (Atelier _ _ _ l) = length l == Set.size (Set.fromList l)
-prop_inv_citoyens_distincts (Epicerie _ _ _ l) = length l == Set.size (Set.fromList l)
-prop_inv_citoyens_distincts _ = True
+prop_inv_citoyens_distincts (Commissariat _ _) = True
+prop_inv_citoyens_distincts b = length (batimentCitoyens b) == length (Set.fromList (batimentCitoyens b))
 
+-- Invariant: Batiment
+prop_inv_Batiment :: Batiment -> Bool
+prop_inv_Batiment b = prop_inv_entre_batiment b && prop_inv_capacite_batiment b && prop_inv_citoyens_distincts b
 
 -- construitBatiment un bâtiment en ajoutant un citoyen, si possible
 construitBatiment:: Batiment -> CitId -> Batiment
@@ -52,33 +76,20 @@ construitBatiment (Atelier f c cap l) cid = Atelier f c cap (cid:l)
 construitBatiment (Epicerie f c cap l) cid = Epicerie f c cap (cid:l)
 construitBatiment b _ = b
 
-  
--- construitBatiment:: Batiment -> CitId -> Maybe Batiment
--- construitBatiment (Commissariat _ _) _ = Nothing
--- construitBatiment (Cabane f c cap l) cid
---   | cap > length l && notElem cid l = Just (Cabane f c cap (cid:l))
---   | otherwise = Nothing
--- construitBatiment (Atelier f c cap l) cid
---   | cap > length l && notElem cid l = Just (Atelier f c cap (cid:l))
---   | otherwise = Nothing
--- construitBatiment (Epicerie f c cap l) cid
---   | cap > length l && notElem cid l = Just (Epicerie f c cap (cid:l))
---   | otherwise = Nothing
-
 -- Précondition pour la fonction construitBatiment
 -- Vérifie que le bâtiment peut ajouter un citoyen donné
 prop_pre_construitBatiment :: Batiment -> CitId -> Bool
-prop_pre_construitBatiment (Commissariat _ _) _ = False  -- Les commissariats ne peuvent pas ajouter de citoyens
-prop_pre_construitBatiment (Cabane _ _ cap l) cid = cap > length l && notElem cid l
-prop_pre_construitBatiment (Atelier _ _ cap l) cid = cap > length l && notElem cid l
-prop_pre_construitBatiment (Epicerie _ _ cap l) cid = cap > length l && notElem cid l
+prop_pre_construitBatiment (Commissariat _ _) _ = True
+prop_pre_construitBatiment batiment cid = 
+    batimentCapacite batiment > length (batimentCitoyens batiment) 
+    && notElem cid (batimentCitoyens batiment)
 
 -- Postcondition pour la fonction construitBatiment
 prop_post_construitBatiment :: Batiment -> Batiment -> CitId -> Bool
-prop_post_construitBatiment (Cabane f c cap l) (Cabane f' c' cap' l') cid =
-    f == f' && c == c' && cap == cap' && cid `elem` l' && length l' == length l + 1
-prop_post_construitBatiment (Atelier f c cap l) (Atelier f' c' cap' l') cid =
-    f == f' && c == c' && cap == cap' && cid `elem` l' && length l' == length l + 1
-prop_post_construitBatiment (Epicerie f c cap l) (Epicerie f' c' cap' l') cid =
-    f == f' && c == c' && cap == cap' && cid `elem` l' && length l' == length l + 1
-prop_post_construitBatiment _ _ _ = False  -- Pour les autres cas comme Commissariat ou lorsque les types ne correspondent pas
+prop_post_construitBatiment (Commissariat _ _) (Commissariat _ _) _ = True
+prop_post_construitBatiment b1 b2 cid =
+    batimentForme b1 == batimentForme b2 &&
+    batimentEntree b1 == batimentEntree b2 &&
+    batimentCapacite b1 == batimentCapacite b2 &&
+    cid `elem` batimentCitoyens b2 &&
+    length (batimentCitoyens b2) == length (batimentCitoyens b1) + 1

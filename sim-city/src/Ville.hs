@@ -16,7 +16,7 @@ data Ville = Ville {
 
 -- Collision entre formes
 collision :: Forme -> Forme -> Bool
-collision _ _ = False  -- À redéfinir selon les règles de collision de votre jeu
+collision  = collision_approx -- À redéfinir selon les regles precise
 
 -- Propriété de non-collision entre zones
 prop_ville_sansCollision :: Ville -> Bool
@@ -35,24 +35,26 @@ prop_ville_routesAdj (Ville zones _) = Map.foldrWithKey (\_ zone acc -> acc && i
         _ -> any (zoneAdjacent zone) (Map.elems zonesMap)
 
     zoneAdjacent :: Zone -> Zone -> Bool
-    zoneAdjacent z1 (Route f2) = any (\coord -> adjacent coord (zoneForme z1)) (boundingCoords  f2)
+    zoneAdjacent z1 (Route f2) = adjacentes (zoneForme z1) f2
     zoneAdjacent _ _ = False
 
 
--- Fonction qui génère les coordonnées des deux extrémités d'un segment en utilisant `limites`
-boundingCoords :: Forme -> [Coord]
-boundingCoords forme = case forme of
-    HSegement _ _ ->
-        let (n, _, w, e) = limites forme
-        in [C w n, C e n]  -- Coordonnées des extrémités ouest et est
-    VSegement _ _ ->
-        let (n, s, w, _) = limites forme
-        in [C w n, C w s]  -- Coordonnées des extrémités nord et sud
-    _ -> []  -- Pour les rectangles ou autres formes non segmentées
+-- propriété que chaque batiment a une entrée adjacente à une route et a la zone du batiment
+prop_ville_batimentsAdj :: Ville -> Bool
+prop_ville_batimentsAdj (Ville zones _) = Map.foldrWithKey (\_ zone acc -> acc && isAdjacentToRoad zone zones) True zones
+  where
+    isAdjacentToRoad :: Zone -> Map ZoneId Zone -> Bool
+    isAdjacentToRoad zone zonesMap = case zone of
+        Route _ -> True  -- Les routes sont toujours ok
+        _ -> any (zoneAdjacent zone) (Map.elems zonesMap)
+
+    zoneAdjacent :: Zone -> Zone -> Bool
+    zoneAdjacent z1 (Route f2) = adjacentes (zoneForme z1) f2
+    zoneAdjacent _ _ = False
 
 -- Un invariant pour ville
 prop_inv_Ville :: Ville -> Bool
-prop_inv_Ville v = prop_ville_sansCollision v && prop_ville_routesAdj v
+prop_inv_Ville v = prop_ville_sansCollision v && prop_ville_routesAdj v 
 
 -- Fonction qui construit une ville en ajoutant une zone
 construitville :: Ville -> Zone -> ZoneId -> Ville
@@ -69,7 +71,7 @@ prop_pre_construitville (Ville zones _) zone zid =
         _ -> any (zoneAdjacent zone) (Map.elems zones)  -- Les autres zones doivent être adjacentes à une route
         where
             zoneAdjacent :: Zone -> Zone -> Bool
-            zoneAdjacent z1 (Route f2) = any (\coord -> adjacent coord (zoneForme z1)) (boundingCoords  f2)
+            zoneAdjacent z1 (Route f2) = adjacentes (zoneForme z1) f2
             zoneAdjacent _ _ = False
 
 
@@ -78,3 +80,4 @@ prop_post_construitville :: Ville -> Zone -> ZoneId -> Ville -> Bool
 prop_post_construitville (Ville zones _) _ zid (Ville zones' _) =
     Map.member zid zones' &&  -- La zonne non reperterorier
     Map.size zones' == Map.size zones + 1  -- Il y a une zone de plus
+
