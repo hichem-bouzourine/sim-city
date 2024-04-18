@@ -31,7 +31,7 @@ forme3 = Rectangle (C 1 1) 5 5
 appartient :: Coord -> Forme -> Bool
 appartient (C x y) (HSegement (C xx yy) l) = (x <= x+l) && (x >= xx) && (y == yy)
 appartient (C x y) (VSegement (C xx yy) l) = (x == xx) && (y <= yy) && (y >= y-l)
-appartient (C x y) (Rectangle (C xx yy) l h) =(x >= xx) && (x <= x+l) && (y <= yy) && (y >= y+h)
+appartient (C x y) (Rectangle (C xx yy) l h) =(x >= xx) && (x <= x+l) && (y <= yy) && (y >= y-h)
 
 
 adjacent ::Coord -> Forme -> Bool
@@ -94,3 +94,10 @@ formeAdj2 = Rectangle (C 1 1) 5 5
 -- True
 -- >>> adjacentes (Rectangle (C (-5) (-4)) 5 5) (Rectangle (C 1 1) 5 5)
 -- False
+
+
+-- instancier show pour les formes
+-- instance Show Forme where
+--     show (HSegement (C x y) l) = "HSegement (" ++ show x ++ ", " ++ show y ++ ") " ++ show l
+--     show (VSegement (C x y) l) = "VSegement (" ++ show x ++ ", " ++ show y ++ ") " ++ show l
+--     show (Rectangle (C x y) l h) = "Rectangle (" ++ show x ++ ", " ++ show y ++ ") " ++ show l ++ " " ++ show h

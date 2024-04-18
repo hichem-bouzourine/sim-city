@@ -111,3 +111,10 @@ prop_post_supprimeCitoyenBatiment :: Batiment -> Batiment -> CitId -> Bool
 prop_post_supprimeCitoyenBatiment b1 b2 cid =
     notElem cid (batimentCitoyens b2) &&
     length (batimentCitoyens b2) == length (batimentCitoyens b1) - 1
+
+-- instancer show pour Batiments
+instance Show Batiment where
+    show ( Cabane f c cap l ) = "Cabane " ++ show f ++ " " ++ show c ++ " " ++ show cap ++ " " ++ show l
+    show ( Atelier f c cap l ) = "Atelier " ++ show f ++ " " ++ show c ++ " " ++ show cap ++ " " ++ show l
+    show ( Epicerie f c cap l ) = "Epicerie " ++ show f ++ " " ++ show c ++ " " ++ show cap ++ " " ++ show l
+    show ( Commissariat f c ) = "Commissariat " ++ show f ++ " " ++ show c

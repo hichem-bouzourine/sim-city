@@ -1,8 +1,9 @@
 import Test.Hspec ( hspec )
 
 import FormeSpec as FS
+import ZoneSpec as ZS
 
 main :: IO ()
 main = hspec $ do
-    -- FormeSpec
     FS.formeSpec
+    ZS.spec

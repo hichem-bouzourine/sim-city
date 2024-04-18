@@ -67,6 +67,7 @@ test-suite sim-city-test
   main-is: Spec.hs
   other-modules:
       FormeSpec
+      ZoneSpec
       Paths_sim_city
   autogen-modules:
       Paths_sim_city

@@ -70,3 +70,16 @@ prop_post_transformeEnEmigrant :: Citoyen -> Citoyen -> Bool
 prop_post_transformeEnEmigrant (Habitant coord _ _ occupation) (Emigrant coord' occupation') =
     coord == coord' && occupation == occupation'
 prop_post_transformeEnEmigrant _ _ = False  -- La postcondition ne s'applique pas si l'entrée n'était pas un Habitant
+
+
+-- instance Show pour citoyen
+instance Show Citoyen where
+    show ( Immigrant coord etat occupation ) = 
+        "Immigrant " ++ show coord ++ " " ++ show etat ++ " " ++ show occupation
+    show ( Habitant coord etat (batId, Nothing, Nothing) occupation) = 
+        "Habitant " ++ show coord ++ " " ++ show etat ++ " " ++ show batId ++ " " ++ show occupation
+    show ( Habitant coord etat (batId, Just batId2, Nothing) occupation) = 
+        "Habitant " ++ show coord ++ " " ++ show etat ++ " " ++ show batId ++ " " ++ show batId2 ++ " " ++ show occupation
+    show ( Habitant coord etat (batId, Just batId2, Just batId3) occupation) = 
+        "Habitant " ++ show coord ++ " " ++ show etat ++ " " ++ show batId ++ " " ++ show batId2 ++ " " ++ show batId3 ++ " " ++ show occupation
+    show ( Emigrant coord occupation ) = "Emigrant " ++ show coord ++ " " ++ show occupation
