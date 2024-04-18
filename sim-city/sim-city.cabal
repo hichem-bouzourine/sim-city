@@ -28,6 +28,7 @@ library
       Batiment
       Citoyen
       Forme
+      Utils
       Ville
       Zone
   other-modules:

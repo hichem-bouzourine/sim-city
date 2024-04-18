@@ -1,7 +1,8 @@
 {-# LANGUAGE InstanceSigs #-}
 module Batiment where
 import Forme
-import Citoyen
+-- import Citoyen
+import Utils
 
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -52,7 +53,7 @@ batimentCitoyens (Commissariat _ _) = []
 
 -- invariants-- Invariant: l'entrée des bâtiments n'est pas dans leur forme et est adjacente à leur forme
 prop_inv_entre_batiment :: Batiment -> Bool
-prop_inv_entre_batiment b = 
+prop_inv_entre_batiment b =
     let (c, f) = (batimentEntree b ,batimentForme b) in not (appartient c f) && adjacent c f
 
 -- Invariant: le nombre de citoyens d'un bâtiment est inférieur à la capacité du bâtiment
@@ -80,8 +81,8 @@ construitBatiment b _ = b
 -- Vérifie que le bâtiment peut ajouter un citoyen donné
 prop_pre_construitBatiment :: Batiment -> CitId -> Bool
 prop_pre_construitBatiment (Commissariat _ _) _ = True
-prop_pre_construitBatiment batiment cid = 
-    batimentCapacite batiment > length (batimentCitoyens batiment) 
+prop_pre_construitBatiment batiment cid =
+    batimentCapacite batiment > length (batimentCitoyens batiment)
     && notElem cid (batimentCitoyens batiment)
 
 -- Postcondition pour la fonction construitBatiment
@@ -93,3 +94,20 @@ prop_post_construitBatiment b1 b2 cid =
     batimentCapacite b1 == batimentCapacite b2 &&
     cid `elem` batimentCitoyens b2 &&
     length (batimentCitoyens b2) == length (batimentCitoyens b1) + 1
+
+-- Suppression d'un citoyen dans un bâtiment
+supprimeCitoyenBatiment :: Batiment -> CitId -> Batiment
+supprimeCitoyenBatiment (Cabane f c cap l) cid = Cabane f c cap (filter (/= cid) l)
+supprimeCitoyenBatiment (Atelier f c cap l) cid = Atelier f c cap (filter (/= cid) l)
+supprimeCitoyenBatiment (Epicerie f c cap l) cid = Epicerie f c cap (filter (/= cid) l)
+supprimeCitoyenBatiment b _ = b  -- Pas de suppression pour les Commissariats ou types non spécifiés
+
+-- Précondition pour la suppression d'un citoyen d'un bâtiment
+prop_pre_supprimeCitoyenBatiment :: Batiment -> CitId -> Bool
+prop_pre_supprimeCitoyenBatiment b cid = cid `elem` batimentCitoyens b
+
+-- Postcondition pour la suppression d'un citoyen d'un bâtiment
+prop_post_supprimeCitoyenBatiment :: Batiment -> Batiment -> CitId -> Bool
+prop_post_supprimeCitoyenBatiment b1 b2 cid =
+    notElem cid (batimentCitoyens b2) &&
+    length (batimentCitoyens b2) == length (batimentCitoyens b1) - 1

@@ -80,6 +80,23 @@ prop_post_construitZone :: Zone -> Zone -> Batiment -> Bool
 prop_post_construitZone (Eau _) _ _ = False
 prop_post_construitZone (Route _) _ _ = False
 prop_post_construitZone (Admin f _) (Admin f' b') b = f == f' && b == b'
-prop_post_construitZone  z1 z2 b = zoneForme z1 == zoneForme z2 
-    && b `elem` zoneBatiments z2 
+prop_post_construitZone  z1 z2 b = zoneForme z1 == zoneForme z2
+    && b `elem` zoneBatiments z2
     && length (zoneBatiments z2) == length (zoneBatiments z1) + 1
+
+-- Retire un bâtiment d'une zone
+retireBatiment :: Zone -> Batiment -> Zone
+retireBatiment (ZR f bs) b = ZR f (filter (/= b) bs)
+retireBatiment (ZI f bs) b = ZI f (filter (/= b) bs)
+retireBatiment (ZC f bs) b = ZC f (filter (/= b) bs)
+retireBatiment zone _ = zone  -- Pour les autres types de zones, on ne modifie pas les bâtiments
+
+-- Précondition pour la fonction de suppression d'un bâtiment
+prop_pre_retireBatiment :: Zone -> Batiment -> Bool
+prop_pre_retireBatiment zone batiment = batiment `elem` zoneBatiments zone
+
+-- Postcondition pour la fonction de suppression d'un bâtiment
+prop_post_retireBatiment :: Zone -> Zone -> Batiment -> Bool
+prop_post_retireBatiment zone nouvelleZone batiment =
+    notElem batiment (zoneBatiments nouvelleZone) &&  -- Le bâtiment ne doit plus être présent
+    length (zoneBatiments zone) == length (zoneBatiments nouvelleZone) + 1  -- Un bâtiment doit avoir été retiré

@@ -4,9 +4,12 @@
 module Ville where
 import Forme
 import Citoyen
+import Utils
+import Batiment
 import Zone
 import Data.Map (Map)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- État de la ville
 data Ville = Ville {
@@ -52,9 +55,21 @@ prop_ville_batimentsAdj (Ville zones _) = Map.foldrWithKey (\_ zone acc -> acc &
     zoneAdjacent z1 (Route f2) = adjacentes (zoneForme z1) f2
     zoneAdjacent _ _ = False
 
+
+-- Invariant: Tous les citoyens dans les bâtiments doivent faire partie des citoyens de la ville
+prop_inv_citoyensDansVille :: Ville -> Bool
+prop_inv_citoyensDansVille (Ville zones citoyens) =
+    all citoyensDansVille (Map.elems zones)
+  where
+    citoyensDansVille :: Zone -> Bool
+    citoyensDansVille zone = all (\b -> Set.fromList (batimentCitoyens b) `Set.isSubsetOf` citoyenIDs) (zoneBatiments zone)
+
+    citoyenIDs :: Set.Set CitId
+    citoyenIDs = Map.keysSet citoyens
+
 -- Un invariant pour ville
 prop_inv_Ville :: Ville -> Bool
-prop_inv_Ville v = prop_ville_sansCollision v && prop_ville_routesAdj v 
+prop_inv_Ville v = prop_ville_sansCollision v && prop_ville_routesAdj v && prop_inv_Ville v
 
 -- Fonction qui construit une ville en ajoutant une zone
 construitville :: Ville -> Zone -> ZoneId -> Ville
@@ -81,3 +96,25 @@ prop_post_construitville (Ville zones _) _ zid (Ville zones' _) =
     Map.member zid zones' &&  -- La zonne non reperterorier
     Map.size zones' == Map.size zones + 1  -- Il y a une zone de plus
 
+-- Fonction qui determine le taux de chomage dans une ville
+tauxChomage :: Ville -> Float
+tauxChomage (Ville _ citoyens) = fromIntegral (length (filter estChomeur (Map.elems citoyens))) / fromIntegral (Map.size citoyens)
+  where
+    estChomeur :: Citoyen -> Bool
+    estChomeur c = citoyenOccupation c /= Travailler
+
+-- Fonction qui supprime une zone dans une ville
+supprimeZone :: Ville -> ZoneId -> Ville
+supprimeZone (Ville zones citoyens) zid = 
+    Ville (Map.delete zid zones) citoyens
+
+-- Précondition pour la suppression d'une zone
+prop_pre_supprimeZone :: Ville -> ZoneId -> Bool
+prop_pre_supprimeZone (Ville zones _) zid = 
+    Map.member zid zones  -- La zone doit exister pour être supprimée
+
+-- Postcondition pour la suppression d'une zone
+prop_post_supprimeZone :: Ville -> Ville -> ZoneId -> Bool
+prop_post_supprimeZone (Ville zones _) (Ville zones' _) zid =
+    not (Map.member zid zones') &&  -- La zone doit avoir été retirée
+    Map.size zones' == Map.size zones - 1  -- Il doit y avoir une zone de moins
