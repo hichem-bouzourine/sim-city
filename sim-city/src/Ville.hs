@@ -118,3 +118,20 @@ prop_post_supprimeZone :: Ville -> Ville -> ZoneId -> Bool
 prop_post_supprimeZone (Ville zones _) (Ville zones' _) zid =
     not (Map.member zid zones') &&  -- La zone doit avoir été retirée
     Map.size zones' == Map.size zones - 1  -- Il doit y avoir une zone de moins
+
+-- Fonction qui ajoute un citoyen à une ville
+ajouteCitoyen :: Ville -> Citoyen -> CitId -> Ville
+ajouteCitoyen (Ville zones citoyens) cit cid = 
+    Ville zones (Map.insert cid cit citoyens)
+
+-- Précondition pour l'ajout d'un citoyen
+prop_pre_ajouteCitoyen :: Ville -> Citoyen -> CitId -> Bool
+prop_pre_ajouteCitoyen (Ville _ citoyens) _ cid = 
+    not (Map.member cid citoyens)  -- L'id du citoyen ne doit pas déjà être utilisé
+
+-- Postcondition pour l'ajout d'un citoyen
+prop_post_ajouteCitoyen :: Ville -> Ville -> Citoyen -> CitId -> Bool
+prop_post_ajouteCitoyen (Ville _ citoyens) (Ville _ citoyens' ) cit cid =
+    Map.lookup cid citoyens' == Just cit &&  -- Le citoyen doit être ajouté
+    Map.size citoyens' == Map.size citoyens + 1  -- Il doit y avoir un citoyen de plus
+

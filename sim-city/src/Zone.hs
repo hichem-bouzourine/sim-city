@@ -4,8 +4,6 @@
 module Zone where
 import Forme
 import Batiment
-import Data.Map (Map)
-import qualified Data.Map as Map
 
 -- Définitions des zones et bâtiments
 data Zone = Eau Forme

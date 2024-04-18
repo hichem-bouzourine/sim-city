@@ -14,6 +14,12 @@ data Citoyen = Immigrant Coord (Int, Int, Int) Occupation
              | Habitant Coord (Int, Int, Int) (BatId, Maybe BatId, Maybe BatId) Occupation
              | Emigrant Coord Occupation
 
+
+-- Instance d'égalité pour les citoyens
+instance Eq Citoyen where
+    (==) c1 c2 = citoyenCoord c1 == citoyenCoord c2
+                 && citoyenEtat c1 == citoyenEtat c2
+                 && citoyenOccupation c1 == citoyenOccupation c2
 -- Getter de coordonnées pour les citoyens
 citoyenCoord :: Citoyen -> Coord
 citoyenCoord (Immigrant coord _ _) = coord
