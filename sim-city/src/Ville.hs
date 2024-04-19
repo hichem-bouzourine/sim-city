@@ -58,7 +58,23 @@ prop_ville_batimentsAdj (Ville zones _) = all batimentsAdjacentsARoute (Map.elem
     adjacentARoute batiment (Route formeRoute) = adjacentes (batimentForme batiment) formeRoute
     adjacentARoute _ _ = False
 
-            
+-- toute les porte des batiments sont adjacente a une route
+prop_ville_portesAdj :: Ville -> Bool
+prop_ville_portesAdj (Ville zones _) = all batimentsPortesAdjacentsARoute (Map.elems zones)
+  where
+    -- Vérifie que tous les bâtiments dans une zone sont adjacents à une route
+    batimentsPortesAdjacentsARoute :: Zone -> Bool
+    batimentsPortesAdjacentsARoute zone = all bâtimentPorteAdjacentRoute (zoneBatiments zone)
+
+    -- Détermine si un bâtiment est adjacent à une route dans la ville
+    bâtimentPorteAdjacentRoute :: Batiment -> Bool
+    bâtimentPorteAdjacentRoute batiment = all (porteAdjacentRoute batiment) (Map.elems zones)
+
+    -- Vérifie si un bâtiment est adjacent à une zone routière
+    porteAdjacentRoute :: Batiment -> Zone -> Bool
+    porteAdjacentRoute batiment (Route formeRoute) = adjacent (batimentEntree batiment) formeRoute
+    porteAdjacentRoute _ _ = False
+
 -- Invariant: Tous les citoyens dans les bâtiments doivent faire partie des citoyens de la ville
 prop_inv_citoyensDansVille :: Ville -> Bool
 prop_inv_citoyensDansVille (Ville zones citoyens) =
