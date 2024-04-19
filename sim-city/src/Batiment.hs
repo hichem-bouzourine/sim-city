@@ -6,6 +6,7 @@ import Utils
 
 import Data.Map (Map)
 import qualified Data.Map as Map
+
 import qualified Data.Set as Set
 
 data Batiment =
@@ -51,7 +52,7 @@ batimentCitoyens (Atelier _ _ _ l) = l
 batimentCitoyens (Epicerie _ _ _ l) = l
 batimentCitoyens (Commissariat _ _) = []
 
--- invariants-- Invariant: l'entrée des bâtiments n'est pas dans leur forme et est adjacente à leur forme
+-- Invariant: l'entrée des bâtiments n'est pas dans leur forme et est adjacente à leur forme
 prop_inv_entre_batiment :: Batiment -> Bool
 prop_inv_entre_batiment b =
     let (c, f) = (batimentEntree b ,batimentForme b) in not (appartient c f) && adjacent c f

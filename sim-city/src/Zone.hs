@@ -12,7 +12,7 @@ data Zone = Eau Forme
  | ZI Forme [Batiment]
  | ZC Forme [Batiment]
  | Admin Forme Batiment
-
+ 
 -- Getters de forme pour les Zones
 zoneForme :: Zone -> Forme
 zoneForme (Eau f) = f
@@ -98,7 +98,8 @@ prop_post_construitZone (Admin f _) (Admin f' b') b = f == f' && b == b'
 prop_post_construitZone  z1 z2 b = zoneForme z1 == zoneForme z2
     && b `elem` zoneBatiments z2
     && length (zoneBatiments z2) == length (zoneBatiments z1) + 1
-
+                                                                 -- le batiment doit etre adjacent à la forme de la zone ?
+                                                                 -- oubien on ne considere pas les invariants les proce
 -- Retire un bâtiment d'une zone
 retireBatiment :: Zone -> Batiment -> Zone
 retireBatiment (ZR f bs) b = ZR f (filter (/= b) bs)

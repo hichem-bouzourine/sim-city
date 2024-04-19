@@ -8,8 +8,8 @@ import Utils
 import Batiment
 import Zone
 import Data.Map (Map)
-import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- État de la ville
 data Ville = Ville {
@@ -41,21 +41,24 @@ prop_ville_routesAdj (Ville zones _) = Map.foldrWithKey (\_ zone acc -> acc && i
     zoneAdjacent z1 (Route f2) = adjacentes (zoneForme z1) f2
     zoneAdjacent _ _ = False
 
-
--- propriété que chaque batiment a une entrée adjacente à une route et a la zone du batiment
+-- Vérifie que chaque bâtiment est adjacent à une route
 prop_ville_batimentsAdj :: Ville -> Bool
-prop_ville_batimentsAdj (Ville zones _) = Map.foldrWithKey (\_ zone acc -> acc && isAdjacentToRoad zone zones) True zones
+prop_ville_batimentsAdj (Ville zones _) = all batimentsAdjacentsARoute (Map.elems zones)
   where
-    isAdjacentToRoad :: Zone -> Map ZoneId Zone -> Bool
-    isAdjacentToRoad zone zonesMap = case zone of
-        Route _ -> True  -- Les routes sont toujours ok
-        _ -> any (zoneAdjacent zone) (Map.elems zonesMap)
+    -- Vérifie que tous les bâtiments dans une zone sont adjacents à une route
+    batimentsAdjacentsARoute :: Zone -> Bool
+    batimentsAdjacentsARoute zone = all bâtimentAdjacentRoute (zoneBatiments zone)
 
-    zoneAdjacent :: Zone -> Zone -> Bool
-    zoneAdjacent z1 (Route f2) = adjacentes (zoneForme z1) f2
-    zoneAdjacent _ _ = False
+    -- Détermine si un bâtiment est adjacent à une route dans la ville
+    bâtimentAdjacentRoute :: Batiment -> Bool
+    bâtimentAdjacentRoute batiment = any (adjacentARoute batiment) (Map.elems zones)
 
+    -- Vérifie si un bâtiment est adjacent à une zone routière
+    adjacentARoute :: Batiment -> Zone -> Bool
+    adjacentARoute batiment (Route formeRoute) = adjacentes (batimentForme batiment) formeRoute
+    adjacentARoute _ _ = False
 
+            
 -- Invariant: Tous les citoyens dans les bâtiments doivent faire partie des citoyens de la ville
 prop_inv_citoyensDansVille :: Ville -> Bool
 prop_inv_citoyensDansVille (Ville zones citoyens) =
@@ -79,8 +82,9 @@ construitville (Ville zones citoyens) zone zid =
 -- Preconditions pour la fonction construit
 prop_pre_construitville :: Ville -> Zone -> ZoneId -> Bool
 prop_pre_construitville (Ville zones _) zone zid =
-    not (Map.member zid zones) && -- L'id de la zone n'est pas déjà utilisé    
-    all (\(_, z') -> not (collision (zoneForme zone) (zoneForme z'))) (Map.toList zones) &&  -- La nouvelle zone ne doit pas entrer en collision avec les zones existantes
+    not (Map.member zid zones) && -- L'id de la zone n'est pas déjà utilisé     -- L'id de la zone n'est pas déjà utilisé    
+     -- L'id de la zone n'est pas déjà utilisé    
+    all (\(_, z') -> not (collision (zoneForme zone) (zoneForme z'))) (Map.toList zones) &&  -- La nouvelle zone ne doit pas entrer en collision avec les zones existantes  -- La nouvelle zone ne doit pas entrer en collision avec les zones existantes
     case zone of
         Route _ -> True  -- Les routes peuvent être placées n'importe où
         _ -> any (zoneAdjacent zone) (Map.elems zones)  -- Les autres zones doivent être adjacentes à une route
@@ -93,7 +97,8 @@ prop_pre_construitville (Ville zones _) zone zid =
 -- Postconditions pour la fonction construit
 prop_post_construitville :: Ville -> Zone -> ZoneId -> Ville -> Bool
 prop_post_construitville (Ville zones _) _ zid (Ville zones' _) =
-    Map.member zid zones' &&  -- La zonne non reperterorier
+    Map.member zid zones' &&  -- La zonne non reperterorier  -- La zonne non reperterorier  -- La zonne non reperterorier  -- La zonne non reperterorier
+      -- La zonne non reperterorier
     Map.size zones' == Map.size zones + 1  -- Il y a une zone de plus
 
 -- Fonction qui determine le taux de chomage dans une ville
@@ -105,33 +110,94 @@ tauxChomage (Ville _ citoyens) = fromIntegral (length (filter estChomeur (Map.el
 
 -- Fonction qui supprime une zone dans une ville
 supprimeZone :: Ville -> ZoneId -> Ville
-supprimeZone (Ville zones citoyens) zid = 
+supprimeZone (Ville zones citoyens) zid =
     Ville (Map.delete zid zones) citoyens
 
 -- Précondition pour la suppression d'une zone
 prop_pre_supprimeZone :: Ville -> ZoneId -> Bool
-prop_pre_supprimeZone (Ville zones _) zid = 
+prop_pre_supprimeZone (Ville zones _) zid =
     Map.member zid zones  -- La zone doit exister pour être supprimée
 
 -- Postcondition pour la suppression d'une zone
 prop_post_supprimeZone :: Ville -> Ville -> ZoneId -> Bool
 prop_post_supprimeZone (Ville zones _) (Ville zones' _) zid =
-    not (Map.member zid zones') &&  -- La zone doit avoir été retirée
+    not (Map.member zid zones') &&  -- La zone doit avoir été retirée  -- La zone doit avoir été retirée  -- La zone doit avoir été retirée  -- La zone doit avoir été retirée
+      -- La zone doit avoir été retirée
     Map.size zones' == Map.size zones - 1  -- Il doit y avoir une zone de moins
 
 -- Fonction qui ajoute un citoyen à une ville
 ajouteCitoyen :: Ville -> Citoyen -> CitId -> Ville
-ajouteCitoyen (Ville zones citoyens) cit cid = 
+ajouteCitoyen (Ville zones citoyens) cit cid =
     Ville zones (Map.insert cid cit citoyens)
 
 -- Précondition pour l'ajout d'un citoyen
 prop_pre_ajouteCitoyen :: Ville -> Citoyen -> CitId -> Bool
-prop_pre_ajouteCitoyen (Ville _ citoyens) _ cid = 
+prop_pre_ajouteCitoyen (Ville _ citoyens) _ cid =
     not (Map.member cid citoyens)  -- L'id du citoyen ne doit pas déjà être utilisé
 
 -- Postcondition pour l'ajout d'un citoyen
 prop_post_ajouteCitoyen :: Ville -> Ville -> Citoyen -> CitId -> Bool
 prop_post_ajouteCitoyen (Ville _ citoyens) (Ville _ citoyens' ) cit cid =
-    Map.lookup cid citoyens' == Just cit &&  -- Le citoyen doit être ajouté
+    Map.lookup cid citoyens' == Just cit &&  -- Le citoyen doit être ajouté  -- Le citoyen doit être ajouté  -- Le citoyen doit être ajouté  -- Le citoyen doit être ajouté
+      -- Le citoyen doit être ajouté
     Map.size citoyens' == Map.size citoyens + 1  -- Il doit y avoir un citoyen de plus
 
+-- Fonction qui retire un citoyen d'une ville
+retireCitoyen :: Ville -> CitId -> Ville
+retireCitoyen (Ville zones citoyens) cid =
+    Ville zones (Map.delete cid citoyens)
+
+-- Précondition pour la suppression d'un citoyen
+prop_pre_retireCitoyen :: Ville -> CitId -> Bool
+prop_pre_retireCitoyen (Ville _ citoyens) cid =
+    Map.member cid citoyens  -- Le citoyen doit exister pour être retiré
+
+-- Postcondition pour la suppression d'un citoyen
+prop_post_retireCitoyen :: Ville -> Ville -> CitId -> Bool
+prop_post_retireCitoyen (Ville _ citoyens) (Ville _ citoyens') cid =
+    not (Map.member cid citoyens') &&  -- Le citoyen doit avoir été retiré  -- Le citoyen doit avoir été retiré  -- Le citoyen doit avoir été retiré  -- Le citoyen doit avoir été retiré
+      -- Le citoyen doit avoir été retiré
+    Map.size citoyens' == Map.size citoyens - 1  -- Il doit y avoir un citoyen de moins
+
+-- Affecte un bâtiment de travail à un habitant, si possible
+affecteBatimentTravail :: Ville -> ZoneId -> Batiment -> BatId -> CitId -> Maybe Ville
+affecteBatimentTravail (Ville zones citoyens) zoneId batiment batId citId =
+    let
+        -- Tentative d'ajout du citoyen au bâtiment spécifié dans la zone spécifiée
+        nouvelleZone = case Map.lookup zoneId zones of
+            Just zone -> Just $ construitZone zone batiment
+            _ -> Nothing
+
+        -- Mise à jour le citoyen avec le nouveau bâtiment de travail
+        nouveauCitoyen = case Map.lookup citId citoyens of
+            Just citoyen -> Just $ affecteBatimentTravail' citoyen batId
+            _ -> Nothing
+    in
+        case (nouvelleZone, nouveauCitoyen) of
+            (Just z, Just c) -> Just $ Ville (Map.insert zoneId z zones) (Map.insert citId c citoyens)
+            _ -> Nothing
+
+-- Précondition pour l'affectation d'un bâtiment de travail
+prop_pre_affecteBatimentTravail :: Ville -> ZoneId -> Batiment -> BatId -> CitId -> Bool
+prop_pre_affecteBatimentTravail (Ville zones citoyens) zoneId batiment _ citId =
+    Map.member citId citoyens &&
+    Map.member zoneId zones && 
+    batiment `elem` zoneBatiments (zones Map.! zoneId) &&
+    notElem citId (batimentCitoyens batiment) &&
+    batimentCapacite batiment > length (batimentCitoyens batiment)
+
+-- Postcondition pour l'affectation d'un bâtiment de travail
+prop_post_affecteBatimentTravail :: Ville -> Ville -> ZoneId -> Batiment -> BatId -> CitId -> Bool
+prop_post_affecteBatimentTravail (Ville zones citoyens) (Ville zones' citoyens') zoneId batiment batId citId =
+    citoyens == citoyens' &&
+    batId `elem` citoyenBatimentTravail (citoyens' Map.! citId) &&
+    length zones == length zones' &&
+    case Map.lookup zoneId zones' of
+        Just zone -> any aux (zoneBatiments zone)   -- si un trouve le batiment avec les meme caracteristique dans la zone avec un le citoyen en plus
+            where
+                aux b 
+                    | batimentForme b == batimentForme batiment && batimentEntree b == batimentEntree batiment =  
+                        length (batimentCitoyens b) == length (batimentCitoyens batiment) + 1 
+                        && citId `elem` batimentCitoyens b
+                    | otherwise = False
+        _ -> False
