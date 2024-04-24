@@ -42,11 +42,11 @@ import qualified Data.Map as Map
 --     moveToBuilding c = undefined
         
 
-    getBatimentWithId :: Map BatId Batiment -> BatId -> Maybe Batiment
-    getBatimentWithId batiments bid = Map.lookup bid batiments
+    -- getBatimentWithId :: Map BatId Batiment -> BatId -> Maybe Batiment
+    -- getBatimentWithId batiments bid = Map.lookup bid batiments
 
-    maxFaim = 10
-    maxEnergie = 10
+    -- maxFaim = 10
+    -- maxEnergie = 10
 
 
 -- cette fonction permet met a jour l'etat(argent, fatigue, famine) d'un citoyen en fonction de son occupation
