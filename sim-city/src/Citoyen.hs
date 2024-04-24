@@ -54,6 +54,14 @@ citoyenBatimentRepos :: Citoyen -> Maybe BatId
 citoyenBatimentRepos (Habitant _ _ (mId, _, _) _) = Just mId
 citoyenBatimentRepos _ = Nothing
 
+-- Getter des batiments concernés pour un citoyen
+citoyenBatiments :: Citoyen -> [BatId]
+citoyenBatiments c = foldr includeIfJust [] [citoyenBatimentTravail c, citoyenBatimentCourse c, citoyenBatimentRepos c]
+    where
+    includeIfJust :: Maybe BatId -> [BatId] -> [BatId]
+    includeIfJust (Just b) acc' = b : acc'
+    includeIfJust _ acc' = acc'
+
 -- Invariant pour vérifier l'état d'un citoyen
 prop_inv_etatCitoyen :: Citoyen -> Bool
 prop_inv_etatCitoyen citoyen = case citoyenEtat citoyen of
@@ -143,16 +151,6 @@ prop_post_affecteBatimentCourse' :: Citoyen -> Citoyen -> BatId -> Bool
 prop_post_affecteBatimentCourse' (Habitant coord etat (mId, _, cId) occupation) (Habitant coord' etat' (mId', tId', cId') occupation') batId =
     coord == coord' && etat == etat' && occupation == occupation'
     && mId == mId' && tId' == cId && cId' == Just batId
-
--- cette fonction permet met a jour l'etat(argent, fatigue, famine) d'un citoyen en fonction de son occupation
-metAJourEtat :: Citoyen -> Citoyen
-metAJourEtat (Habitant coord (etat1, etat2, etat3) (mId, tId, cId) Travailler) = 
-    Habitant coord (etat1 + wGain, etat2 + wFaim, etat3 + wFatigue) (mId, tId, cId) Travailler
-metAJourEtat (Habitant coord (etat1, etat2, etat3) (mId, tId, cId) FaireCourses) =      
-    Habitant coord (etat1, etat2 + cFaim, etat3) (mId, tId, cId) FaireCourses
-metAJourEtat (Habitant coord (etat1, etat2, etat3) (mId, tId, cId) Dormir) =
-    Habitant coord (etat1, etat2, etat3 + dFatigue) (mId, tId, cId) Dormir
-metAJourEtat c = c
 
 -- Précondition pour la mise à jour de l'état d'un citoyen
 instance Show Citoyen where

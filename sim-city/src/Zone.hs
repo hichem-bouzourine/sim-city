@@ -4,6 +4,7 @@
 module Zone where
 import Forme
 import Batiment
+import qualified Data.Foldable as Map
 
 -- Définitions des zones et bâtiments
 data Zone = Eau Forme
@@ -12,7 +13,7 @@ data Zone = Eau Forme
  | ZI Forme [Batiment]
  | ZC Forme [Batiment]
  | Admin Forme Batiment
- 
+
 -- Getters de forme pour les Zones
 zoneForme :: Zone -> Forme
 zoneForme (Eau f) = f
@@ -116,6 +117,29 @@ prop_post_retireBatiment :: Zone -> Zone -> Batiment -> Bool
 prop_post_retireBatiment zone nouvelleZone batiment =
     notElem batiment (zoneBatiments nouvelleZone) &&  -- Le bâtiment ne doit plus être présent
     length (zoneBatiments zone) == length (zoneBatiments nouvelleZone) + 1  -- Un bâtiment doit avoir été retiré
+
+-- Mise a jour d'un bâtiment d'une zone
+updateZoneBtiment :: Zone -> Batiment -> Zone
+updateZoneBtiment (Admin f _) b = Admin f b
+updateZoneBtiment (ZR f bs) b = ZR f (map (\b' -> if b' == b then b else b') bs)
+updateZoneBtiment (ZI f bs) b = ZI f (map (\b' -> if b' == b then b else b') bs)
+updateZoneBtiment (ZC f bs) b = ZC f (map (\b' -> if b' == b then b else b') bs)
+updateZoneBtiment _ _ = error "Impossible de mettre à jour un bâtiment dans cette zone: "
+
+-- Précondition pour la fonction de mise à jour d'un bâtiment
+prop_pre_updateZoneBtiment :: Zone -> Batiment -> Bool
+prop_pre_updateZoneBtiment (Eau _) _ = False
+prop_pre_updateZoneBtiment (Route _) _ = False
+prop_pre_updateZoneBtiment z b = b `elem` zoneBatiments z
+
+-- Postcondition pour la fonction de mise à jour d'un bâtiment
+prop_post_updateZoneBtiment :: Zone -> Zone -> Batiment -> Bool
+prop_post_updateZoneBtiment (Eau _) _ _ = False
+prop_post_updateZoneBtiment (Route _) _ _ = False
+prop_post_updateZoneBtiment (Admin f _) (Admin f' b') b = f == f' && b == b'
+prop_post_updateZoneBtiment z1 z2 b = zoneForme z1 == zoneForme z2
+    && b `elem` zoneBatiments z2
+    && length (zoneBatiments z2) == length (zoneBatiments z1)
 
 -- instancer show pour les zones
 instance Show Zone where

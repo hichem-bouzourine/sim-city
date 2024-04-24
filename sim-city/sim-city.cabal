@@ -27,6 +27,8 @@ library
   exposed-modules:
       Batiment
       Citoyen
+      Environement
+      Etat
       Forme
       Utils
       Ville

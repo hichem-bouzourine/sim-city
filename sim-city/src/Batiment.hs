@@ -18,9 +18,9 @@ data Batiment =
 -- Instaciation EQ pour les Batiments
 instance Eq Batiment where
     (==) :: Batiment -> Batiment -> Bool
-    (Cabane f1 c1 cap1 l1) == (Cabane f2 c2 cap2 l2) = f1 == f2 && c1 == c2 && cap1 == cap2 && l1 == l2
-    (Atelier f1 c1 cap1 l1) == (Atelier f2 c2 cap2 l2) = f1 == f2 && c1 == c2 && cap1 == cap2 && l1 == l2
-    (Epicerie f1 c1 cap1 l1) == (Epicerie f2 c2 cap2 l2) = f1 == f2 && c1 == c2 && cap1 == cap2 && l1 == l2
+    (Cabane f1 c1 cap1 _) == (Cabane f2 c2 cap2 _) = f1 == f2 && c1 == c2 && cap1 == cap2 
+    (Atelier f1 c1 cap1 _) == (Atelier f2 c2 cap2 _) = f1 == f2 && c1 == c2 && cap1 == cap2 
+    (Epicerie f1 c1 cap1 _) == (Epicerie f2 c2 cap2 _) = f1 == f2 && c1 == c2 && cap1 == cap2 
     (Commissariat f1 c1) == (Commissariat f2 c2) = f1 == f2 && c1 == c2
     _ == _ = False
 
