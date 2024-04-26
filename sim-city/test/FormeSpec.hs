@@ -38,3 +38,10 @@ formeSpec = do
   describe "collision_approx" $ do
     it "checks collision between two Formes" $ do
       collision_approx (HSegement (C 1 1) 5) (Rectangle (C 3 3) 3 3) `shouldBe` True
+
+  describe "adjacentes" $ do
+    it "checks if two Formes are adjacent" $ do
+      adjacentes (Rectangle (C (-5) (-4)) 5 5) (Rectangle (C 1 1) 5 5) `shouldBe` False
+      adjacentes (Rectangle (C 1 1) 5 5) (Rectangle (C 1 6) 5 5) `shouldBe` True
+      adjacentes (Rectangle (C 1 1) 5 5) (Rectangle (C 4 5) 5 5) `shouldBe` False
+      
