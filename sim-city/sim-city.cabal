@@ -68,7 +68,10 @@ test-suite sim-city-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      BatimentSpec
+      CitoyenSpec
       FormeSpec
+      VilleSpec
       ZoneSpec
       Paths_sim_city
   autogen-modules:

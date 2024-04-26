@@ -119,6 +119,23 @@ prop_inv_batimentsDistincts ville = foldr (\b acc -> acc && batimentDistinct b) 
     batimentDistinct :: Batiment -> Bool
     batimentDistinct b = length (filter (b ==) (villeBatiments ville)) == 1
 
+-- ? routes connexes ! :
+estAdjacenteARoute :: Zone -> Ville -> Bool
+estAdjacenteARoute z ville = any (\z' -> case z' of 
+        Route _ -> adjacentes (zoneForme z) (zoneForme z'); 
+        _ -> False) (Map.elems (viZones ville))
+
+-- Vérifie si une liste de zones est une séquence de zones de route connexes, en utilisant estAdjacenteARoute
+estRouteConnexe :: [Zone] -> Ville -> Bool
+estRouteConnexe [] _ = True
+estRouteConnexe [_] _ = True
+estRouteConnexe (z1:z2:zs) ville = estAdjacenteARoute z1 ville && estRouteConnexe (z2:zs) ville
+
+
+-- Vérifie si les Routes d'une ville sont connexes donc on filtre les routes puis on vérifie s'il sont connexes,
+routesConnexes :: Ville -> Bool
+routesConnexes (Ville zones _) = estRouteConnexe (filter (\z -> case z of Route _ -> True; _ -> False) (Map.elems zones)) (Ville zones Map.empty)
+
 -- Un invariant pour ville
 prop_inv_Ville :: Ville -> Bool
 prop_inv_Ville v = prop_ville_sansCollision v && prop_ville_routesAdj v &&  prop_inv_batimentsDistincts v
