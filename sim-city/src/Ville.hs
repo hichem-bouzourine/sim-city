@@ -24,7 +24,7 @@ villeBatiments (Ville zones _) = Map.foldr aux [] zones
   where
     aux :: Zone -> [Batiment] -> [Batiment]
     aux z acc = zoneBatiments z ++ acc
-    
+
 -- Getters ville citoyen
 villeCitoyens :: Ville -> [Citoyen]
 villeCitoyens (Ville _ citoyens) = Map.elems citoyens
@@ -42,6 +42,12 @@ villeBatimentsCitId (Ville zones _) = Map.foldr aux [] zones
   where
     aux :: Zone -> [CitId] -> [CitId]
     aux z acc = foldr (\b acc' -> batimentCitoyens b ++ acc') acc (zoneBatiments z)
+
+-- Cette fonction permet de recuperer un Citoyen 
+villeGetCitoyen :: Ville -> CitId ->  Citoyen
+villeGetCitoyen (Ville _ citoyens) cid = case Map.lookup cid citoyens of
+    Just c -> c
+    Nothing -> error "Citoyen non trouvé"
 
 -- Collision entre formes
 collision :: Forme -> Forme -> Bool

@@ -18,9 +18,9 @@ data Batiment =
 -- Instaciation EQ pour les Batiments
 instance Eq Batiment where
     (==) :: Batiment -> Batiment -> Bool
-    (Cabane f1 c1 cap1 _) == (Cabane f2 c2 cap2 _) = f1 == f2 && c1 == c2 && cap1 == cap2 
-    (Atelier f1 c1 cap1 _) == (Atelier f2 c2 cap2 _) = f1 == f2 && c1 == c2 && cap1 == cap2 
-    (Epicerie f1 c1 cap1 _) == (Epicerie f2 c2 cap2 _) = f1 == f2 && c1 == c2 && cap1 == cap2 
+    (Cabane f1 c1 cap1 _) == (Cabane f2 c2 cap2 _) = f1 == f2 && c1 == c2 && cap1 == cap2
+    (Atelier f1 c1 cap1 _) == (Atelier f2 c2 cap2 _) = f1 == f2 && c1 == c2 && cap1 == cap2
+    (Epicerie f1 c1 cap1 _) == (Epicerie f2 c2 cap2 _) = f1 == f2 && c1 == c2 && cap1 == cap2
     (Commissariat f1 c1) == (Commissariat f2 c2) = f1 == f2 && c1 == c2
     _ == _ = False
 
@@ -113,6 +113,16 @@ prop_post_supprimeCitoyenBatiment b1 b2 cid =
     notElem cid (batimentCitoyens b2) &&
     length (batimentCitoyens b2) == length (batimentCitoyens b1) - 1
 
+
+-- Cette fonction verifie si un baiment est un batiment de travail
+estBatimentTravail :: Batiment -> Bool
+estBatimentTravail (Atelier {}) = True
+estBatimentTravail _ = False
+
+-- Cette fonction verifie si un baiment est un batiment de commerce
+estBatimentCommerce :: Batiment -> Bool
+estBatimentCommerce (Epicerie {}) = True
+estBatimentCommerce _ = False
 -- instancer show pour Batiments
 instance Show Batiment where
     show ( Cabane f c cap l ) = "Cabane " ++ show f ++ " " ++ show c ++ " " ++ show cap ++ " " ++ show l

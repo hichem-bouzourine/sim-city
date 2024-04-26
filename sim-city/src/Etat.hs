@@ -12,41 +12,56 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 
 
--- | Update the occupation of citizens based on their conditions
--- metAJourOccCitoyen :: Environement -> Environement
--- metAJourOccCitoyen (Env h w envBat (Ville zones citoyens)) = Env h w envBat $ Ville zones (Map.map updateOccupation citoyens)
---   where
---     updateOccupation :: Citoyen -> Citoyen
---     updateOccupation c@(Habitant coord (etat1, etat2, etat3) (mId, tId, cId) occupation) =
---       case occupation of
---         Travailler -> updateForWork c etat2 etat3
---         FaireCourses -> updateForShopping c etat2 etat3
---         Dormir -> updateForSleeping c etat2 etat3
---         _ -> c  -- No change for Deplacer or other states
 
---     updateForWork c etat2 etat3
---       | etat2 <= 5 = moveToBuilding c mId
---       | etat3 <= 5 = maybe c (moveToBuilding c) cId
---       | otherwise = c
+--  Update the occupation of citizens based on their conditions
+updateOccCitoyen :: Environement -> Environement
+updateOccCitoyen env@(Env h w envBat (Ville zones citoyens)) = Env h w envBat $ Ville zones (Map.map updateOccupation citoyens)
+  where
+    updateOccupation :: Citoyen -> Citoyen
+    updateOccupation c =
+      case citoyenOccupation c of
+        Travailler -> updateForWork c 
+        FaireCourses -> updateForShopping c 
+        Dormir -> updateForSleeping c 
+        -- Deplacer coord -> citoyenMove c coord
+        _ -> c  -- Les autres occupations ne sont pas mises à jour
+        
+    updateForWork c
+        | citoyenFatigue c == 0 = case citoyenBatimentRepos c of                           -- Si le citoyen est fatigué il se dirige vers sa maison pour se reposer
+            Just m -> citoyenBatTarget c (getBatimentWithId env m)
+            _ -> c  -- a revoir
+        | citoyenFaim c == 0 && citoyenArgent c > 0 = case citoyenBatimentCourse c of      -- Si le citoyen a faim il se dirige vers son batiment de course s'il dispose d'argent
+                Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
+                _ -> c -- a revoir                         
+    updateForWork c = c                                                                    -- Autrement il continue de travailler
 
---     updateForShopping c etat2 etat3 
---       | etat3 >= maxFaim && etat2 < maxEnergie = moveToBuilding c mId
---       | etat3 >= maxFaim = maybe c (moveToBuilding c) tId
---       | otherwise = c
+    updateForShopping c
+        | citoyenFaim c < maxFaim && citoyenArgent c > 0 = c                               -- s'il n'ai pas rasasié et dispose d'argent il continue de faire les courses
+        | otherwise = case citoyenBatimentRepos c of                                       -- s'il est rasasié il se dirige vers sa maison pour se reposer s'il en a
+            Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
+            _ -> case citoyenBatimentTravail c of                                          -- Autrement il se dirige vers son batiment de travail si possible
+                Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
+                _ ->  c -- a revoir
 
---     updateForSleeping c etat2 etat3 =
---       if etat2 >= maxEnergie && etat3 < maxFaim then maybe c (moveToBuilding c) cId
---       else c
 
---     moveToBuilding :: Citoyen -> Citoyen 
---     moveToBuilding c = undefined
+    updateForSleeping c
+        | citoyenFatigue c < maxEnergie = c                                                -- il se repose tanqu'il n'ai pas en forme
+        | otherwise = case citoyenBatimentTravail c of                                     -- Autrement il se dirige vers son batiment de travail si possible
+            Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
+            _ -> c -- a revoir
+
+
         
 
-    -- getBatimentWithId :: Map BatId Batiment -> BatId -> Maybe Batiment
-    -- getBatimentWithId batiments bid = Map.lookup bid batiments
+    -- getBatimentWithId :: Environement -> BatId -> Batiment
+    -- getBatimentWithId env bid = case Map.lookup bid (envBatiments env) of
+    --     Just b -> b
+    --     _ -> error "Batiment non trouvé"
+        
+    
 
-    -- maxFaim = 10
-    -- maxEnergie = 10
+    maxFaim = 10
+    maxEnergie = 10
 
 
 -- cette fonction permet met a jour l'etat(argent, fatigue, famine) d'un citoyen en fonction de son occupation
@@ -95,31 +110,24 @@ prop_post_retireCitoyen env env' cid = case envVille env of
 affecteBatimentTravail :: Environement -> BatId -> CitId -> Maybe Environement
 affecteBatimentTravail env@(Env h w envBat v@(Ville zones citoyens)) batId citId =
     let
-        -- Tentative d'ajout du citoyen au bâtiment spécifié dans la zone spécifiée
-        newBatiment = case getBatimentWithId env batId of
-            Just batiment -> Just $ construitBatiment batiment citId
-            _ -> Nothing
+        -- ajout du citoyen au bâtiment spécifié dans la zone spécifiée
+        newBatiment =  construitBatiment (getBatimentWithId env batId) citId
 
         -- Mise à jour le citoyen avec le nouveau bâtiment de travail
-        nouveauCitoyen = case Map.lookup citId citoyens of
-            Just citoyen -> Just $ affecteBatimentTravail' citoyen batId
-            _ -> Nothing
+        newCitoyen =  affecteBatimentTravail' (villeGetCitoyen v citId) batId
     in
-        case (newBatiment, nouveauCitoyen) of
-            (Just b, Just c) -> case getZoneBatiment v b of
-                Just (k, z) ->  Just  $ Env h w (Map.insert batId b envBat)                             -- mise a jour du batiment dans l'ennnuaire de l'enviroment 
-                            $ Ville (Map.insert k z zones ) (Map.insert citId c citoyens)             -- mise a jour du citoyen dans l'ennuaire de la ville
+        case getZoneBatiment v newBatiment of
+                Just (k, z) ->  Just  $ Env h w (Map.insert batId newBatiment envBat)                             -- mise a jour du batiment dans l'ennnuaire de l'enviroment 
+                            $ Ville (Map.insert k z zones ) (Map.insert citId newCitoyen citoyens)             -- mise a jour du citoyen dans l'ennuaire de la ville
                 _ -> Nothing
-            _ -> Nothing
 
 -- Précondition pour l'affectation d'un bâtiment de travail
 prop_pre_affecteBatimentTravail :: Environement  -> BatId -> CitId -> Bool
-prop_pre_affecteBatimentTravail a@(Env _ _ _ (Ville _ citoyens)) batId citId =
+prop_pre_affecteBatimentTravail env@(Env _ _ _ (Ville _ citoyens)) batId citId =
     Map.member citId citoyens &&
-    case getBatimentWithId a batId of 
-        Just b -> citId `notElem` batimentCitoyens b &&         -- Le bâtiment doit exister et le citoyen ne doit pas déjà être affecté
-            batimentCapacite b > length (batimentCitoyens b)    -- Le bâtiment doit avoir de la place
-        _ -> False 
+    let b = getBatimentWithId env batId in
+    citId `notElem` batimentCitoyens b &&               -- Le bâtiment doit exister et le citoyen ne doit pas déjà être affecté
+    batimentCapacite b > length (batimentCitoyens b)    -- Le bâtiment doit avoir de la place
 
 -- Postcondition pour l'affectation d'un bâtiment de travail
 prop_post_affecteBatimentTravail :: Environement -> Environement -> BatId -> CitId -> Bool
@@ -135,29 +143,22 @@ affecteBatimentCourse :: Environement -> BatId -> CitId -> Maybe Ville
 affecteBatimentCourse (Env h w envBat v@(Ville zones citoyens)) batId citId =
     let
         -- Tentative d'ajout du citoyen au bâtiment spécifié dans la zone spécifiée
-        newBatiment = case getBatimentWithId (Env h w envBat (Ville zones citoyens)) batId of
-            Just batiment -> Just $ construitBatiment batiment citId
-            _ -> Nothing
+        newBatiment = construitBatiment (getBatimentWithId (Env h w envBat v) batId) citId
 
         -- Mise à jour le citoyen avec le nouveau bâtiment de travail
-        nouveauCitoyen = case Map.lookup citId citoyens of
-            Just citoyen -> Just $ affecteBatimentCourse' citoyen batId
-            _ -> Nothing
+        newCitoyen = affecteBatimentCourse' (villeGetCitoyen v citId) batId
     in
-        case (newBatiment, nouveauCitoyen) of
-            (Just b, Just c) -> case getZoneBatiment v b of
-                Just (k, z) ->  Just  $ Ville (Map.insert k z zones ) (Map.insert citId c citoyens)             -- mise a jour du citoyen dans l'ennuaire de la ville
-                _ -> Nothing
+        case getZoneBatiment v newBatiment of
+            Just (k, z) ->  Just  $ Ville (Map.insert k z zones ) (Map.insert citId newCitoyen citoyens)             -- mise a jour du citoyen dans l'ennuaire de la ville
             _ -> Nothing
 
 -- Précondition pour l'affectation d'un bâtiment de course
 prop_pre_affecteBatimentCourse :: Environement -> BatId -> CitId -> Bool
 prop_pre_affecteBatimentCourse a@(Env _ _ _ (Ville _ citoyens)) batId citId =
     Map.member citId citoyens &&
-    case getBatimentWithId a batId of 
-        Just b -> citId `notElem` batimentCitoyens b &&         -- Le bâtiment doit exister et le citoyen ne doit pas déjà être affecté
-            batimentCapacite b > length (batimentCitoyens b)    -- Le bâtiment doit avoir de la place
-        _ -> False
+    let b = getBatimentWithId a batId in
+    citId `notElem` batimentCitoyens b &&               -- Le bâtiment doit exister et le citoyen ne doit pas déjà être affecté
+    batimentCapacite b > length (batimentCitoyens b)    -- Le bâtiment doit avoir de la place
 
 -- Postcondition pour l'affectation d'un bâtiment de course
 prop_post_affecteBatimentCourse :: Environement -> Environement -> BatId -> CitId -> Bool
@@ -167,5 +168,3 @@ prop_post_affecteBatimentCourse (Env _ _ _ (Ville zones _)) (Env _ _ envBat (Vil
     case citoyenBatimentCourse (citoyens' Map.! citId) of           -- Le citoyen doit être affecté au bâtiment
         Just bId -> bId == batId
         _ -> False
-
-

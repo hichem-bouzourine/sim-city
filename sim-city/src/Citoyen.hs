@@ -4,6 +4,7 @@
 module Citoyen where
 import Forme
 import Utils
+import Batiment (Batiment, batimentEntree)
 
 -- import Data.Map (Map)
 -- import qualified Data.Map as Map
@@ -39,6 +40,24 @@ citoyenEtat (Immigrant _ etat _) = Just etat
 citoyenEtat (Habitant _ etat _ _) = Just etat
 citoyenEtat (Emigrant _ _) = Nothing  -- Les émigrants n'ont pas d'état défini
 
+-- Getter de l'argent pour les citoyens
+citoyenArgent :: Citoyen -> Int
+citoyenArgent c = case citoyenEtat c of
+    Just (x, _, _) -> x
+    Nothing -> 0
+
+-- Getter de la fatigue pour les citoyens
+citoyenFatigue :: Citoyen -> Int
+citoyenFatigue c = case citoyenEtat c of
+    Just (_, x, _) -> x
+    Nothing -> 0
+
+-- Getter de la faim pour les citoyens
+citoyenFaim :: Citoyen -> Int
+citoyenFaim c = case citoyenEtat c of
+    Just (_, _, x) -> x
+    Nothing -> 0
+
 -- Getter de batiment de travail pour les citoyens
 citoyenBatimentTravail :: Citoyen -> Maybe BatId
 citoyenBatimentTravail (Habitant _ _ (_, tId, _) _) = tId
@@ -53,7 +72,6 @@ citoyenBatimentCourse _ = Nothing
 citoyenBatimentRepos :: Citoyen -> Maybe BatId
 citoyenBatimentRepos (Habitant _ _ (mId, _, _) _) = Just mId
 citoyenBatimentRepos _ = Nothing
-
 -- Getter des batiments concernés pour un citoyen
 citoyenBatiments :: Citoyen -> [BatId]
 citoyenBatiments c = foldr includeIfJust [] [citoyenBatimentTravail c, citoyenBatimentCourse c, citoyenBatimentRepos c]
@@ -83,7 +101,7 @@ prop_inv_occupationCitoyen citoyen = case citoyenOccupation citoyen of
 
 -- Invariant pour vérifier un citoyen
 prop_inv_citoyens :: Citoyen -> Bool
-prop_inv_citoyens citoyen = 
+prop_inv_citoyens citoyen =
     prop_inv_etatCitoyen citoyen
     && prop_inv_occupationCitoyen citoyen
 
@@ -152,15 +170,18 @@ prop_post_affecteBatimentCourse' (Habitant coord etat (mId, _, cId) occupation) 
     coord == coord' && etat == etat' && occupation == occupation'
     && mId == mId' && tId' == cId && cId' == Just batId
 
--- Précondition pour la mise à jour de l'état d'un citoyen
+-- Cette fonction permet d'assigner un target de batiment a un citoyen
+citoyenBatTarget :: Citoyen -> Batiment -> Citoyen
+citoyenBatTarget (Habitant coord etat (mId, tId, cId) _) batId = Habitant coord etat (mId, tId, cId) (Deplacer (batimentEntree batId))
+
 instance Show Citoyen where
-    show ( Immigrant coord etat occupation ) = 
+    show ( Immigrant coord etat occupation ) =
         "Immigrant " ++ show coord ++ " " ++ show etat ++ " " ++ show occupation
-    show ( Habitant coord etat (batId, Nothing, Nothing) occupation) = 
+    show ( Habitant coord etat (batId, Nothing, Nothing) occupation) =
         "Habitant " ++ show coord ++ " " ++ show etat ++ " " ++ show batId ++ " " ++ show occupation
-    show ( Habitant coord etat (batId, Just batId2, Nothing) occupation) = 
+    show ( Habitant coord etat (batId, Just batId2, Nothing) occupation) =
         "Habitant " ++ show coord ++ " " ++ show etat ++ " " ++ show batId ++ " " ++ show batId2 ++ " " ++ show occupation
-    show ( Habitant coord etat (batId, Just batId2, Just batId3) occupation) = 
+    show ( Habitant coord etat (batId, Just batId2, Just batId3) occupation) =
         "Habitant " ++ show coord ++ " " ++ show etat ++ " " ++ show batId ++ " " ++ show batId2 ++ " " ++ show batId3 ++ " " ++ show occupation
     show ( Emigrant coord occupation ) = "Emigrant " ++ show coord ++ " " ++ show occupation
-    
+
