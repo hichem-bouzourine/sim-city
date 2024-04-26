@@ -3,11 +3,15 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 module Forme where
+import Data.Sequence (Seq)
+import Data.List (nub)
+import Data.Sequence (fromList)
+
 
 data Coord = C {
     cx :: Int,
     cy :: Int
-} deriving (Show, Eq)
+} deriving (Show, Eq, Ord)
 
 data Forme =
         HSegement Coord Int
@@ -90,9 +94,29 @@ adjacentes' f1 f2 = let (y1, y2, x1, x2) = limites f1
                     || adjacent (C x2 y1) f2
 formeAdj1 = Rectangle (C (-2) 6) 5 5
 formeAdj2 = Rectangle (C 1 1) 5 5
+-- cette fonction renvoie toute les coordonnées de la bordure d'une forme
+formeBordure :: Forme -> Seq Coord
+formeBordure forme = fromList $ nub $ case forme of
+    HSegement (C x y) length -> [C x' y | x' <- [x..x+length]] -- Horizontal segment borders
+    VSegement (C x y) length -> [C x y' | y' <- [y, y-1..y-length]] -- Vertical segment borders
+    Rectangle (C x y) width height -> nub $ -- Rectangle borders
+        [C x' y | x' <- [x..x+width]] ++ -- Top border
+        [C x' (y-height) | x' <- [x..x+width]] ++ -- Bottom border
+        [C x y' | y' <- [y, y-1..y-height]] ++ -- Left border
+        [C (x+width) y' | y' <- [y, y-1..y-height]] -- Right border
+
+-- >>> formeBordure (HSegement (C 0 0) 5)
+-- fromList [C {cx = 0, cy = 0},C {cx = 1, cy = 0},C {cx = 2, cy = 0},C {cx = 3, cy = 0},C {cx = 4, cy = 0},C {cx = 5, cy = 0}]
+
+-- >>> formeBordure (VSegement (C 0 0) 5)
+-- fromList [C {cx = 0, cy = 0},C {cx = 0, cy = -1},C {cx = 0, cy = -2},C {cx = 0, cy = -3},C {cx = 0, cy = -4},C {cx = 0, cy = -5}]
+
+-- >>> formeBordure (Rectangle (C 0 0) 5 5)
+-- fromList [C {cx = 0, cy = 0},C {cx = 1, cy = 0},C {cx = 2, cy = 0},C {cx = 3, cy = 0},C {cx = 4, cy = 0},C {cx = 5, cy = 0},C {cx = 0, cy = -5},C {cx = 1, cy = -5},C {cx = 2, cy = -5},C {cx = 3, cy = -5},C {cx = 4, cy = -5},C {cx = 5, cy = -5},C {cx = 0, cy = -1},C {cx = 0, cy = -2},C {cx = 0, cy = -3},C {cx = 0, cy = -4},C {cx = 5, cy = -1},C {cx = 5, cy = -2},C {cx = 5, cy = -3},C {cx = 5, cy = -4}]
 
 -- >>> adjacentes formeAdj1 formeAdj2
--- True
+-- fromList [C {cx = 0, cy = 0},C {cx = 1, cy = 0},C {cx = 2, cy = 0},C {cx = 3, cy = 0},C {cx = 4, cy = 0},C {cx = 5, cy = 0},C {cx = 0, cy = -5},C {cx = 1, cy = -5},C {cx = 2, cy = -5},C {cx = 3, cy = -5},C {cx = 4, cy = -5},C {cx = 5, cy = -5},C {cx = 0, cy = -1},C {cx = 0, cy = -2},C {cx = 0, cy = -3},C {cx = 0, cy = -4},C {cx = 5, cy = -1},C {cx = 5, cy = -2},C {cx = 5, cy = -3},C {cx = 5, cy = -4}]
+
 -- >>> adjacentes (Rectangle (C (-5) (-4)) 5 5) (Rectangle (C 1 1) 5 5)
 -- False
 

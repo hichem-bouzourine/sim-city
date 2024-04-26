@@ -4,12 +4,12 @@
 module Citoyen where
 import Forme
 import Utils
-import Batiment (Batiment, batimentEntree)
+import Batiment (Batiment)
 
 -- import Data.Map (Map)
 -- import qualified Data.Map as Map
 
-data Occupation = Travailler | Dormir | FaireCourses | Deplacer Coord deriving (Show, Eq)
+data Occupation = Travailler | Dormir | FaireCourses | Deplacer Batiment deriving (Show, Eq)
 
 -- Type représentant un citoyen avec ses informations spécifiques
 data Citoyen = Immigrant Coord (Int, Int, Int) Occupation
@@ -39,6 +39,12 @@ citoyenEtat :: Citoyen -> Maybe (Int, Int, Int)
 citoyenEtat (Immigrant _ etat _) = Just etat
 citoyenEtat (Habitant _ etat _ _) = Just etat
 citoyenEtat (Emigrant _ _) = Nothing  -- Les émigrants n'ont pas d'état défini
+
+-- Fonction de mise a jour de l'occupation
+citoyenUpdateOccupation :: Citoyen -> Occupation -> Citoyen
+citoyenUpdateOccupation (Immigrant coord etat _) occupation = Immigrant coord etat occupation 
+citoyenUpdateOccupation (Habitant coord etat batIds _) occupation = Habitant coord etat batIds occupation
+citoyenUpdateOccupation (Emigrant coord _) occupation = Emigrant coord occupation 
 
 -- Getter de l'argent pour les citoyens
 citoyenArgent :: Citoyen -> Int
@@ -172,7 +178,7 @@ prop_post_affecteBatimentCourse' (Habitant coord etat (mId, _, cId) occupation) 
 
 -- Cette fonction permet d'assigner un target de batiment a un citoyen
 citoyenBatTarget :: Citoyen -> Batiment -> Citoyen
-citoyenBatTarget (Habitant coord etat (mId, tId, cId) _) batId = Habitant coord etat (mId, tId, cId) (Deplacer (batimentEntree batId))
+citoyenBatTarget (Habitant coord etat (mId, tId, cId) _) batiment = Habitant coord etat (mId, tId, cId) (Deplacer batiment)
 
 instance Show Citoyen where
     show ( Immigrant coord etat occupation ) =

@@ -25,6 +25,10 @@ villeBatiments (Ville zones _) = Map.foldr aux [] zones
     aux :: Zone -> [Batiment] -> [Batiment]
     aux z acc = zoneBatiments z ++ acc
 
+-- Getters des zones d'une villes 
+villeZones :: Ville -> [Zone]
+villeZones (Ville zones _) = Map.elems zones
+
 -- Getters ville citoyen
 villeCitoyens :: Ville -> [Citoyen]
 villeCitoyens (Ville _ citoyens) = Map.elems citoyens

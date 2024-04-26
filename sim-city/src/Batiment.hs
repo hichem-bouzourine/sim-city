@@ -1,4 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use tuple-section" #-}
 module Batiment where
 import Forme
 -- import Citoyen
@@ -6,8 +8,9 @@ import Utils
 
 import Data.Map (Map)
 import qualified Data.Map as Map
-
 import qualified Data.Set as Set
+import Data.Foldable
+
 
 data Batiment =
     Cabane Forme Coord Int [CitId]
@@ -51,6 +54,12 @@ batimentCitoyens (Cabane _ _ _ l) = l
 batimentCitoyens (Atelier _ _ _ l) = l
 batimentCitoyens (Epicerie _ _ _ l) = l
 batimentCitoyens (Commissariat _ _) = []
+
+-- Cette fonction determine les contours d'un batiment
+batimentMap :: Batiment -> Map Coord String
+batimentMap b = Map.fromList $ map (\c -> 
+    if batimentEntree b == c 
+        then (c, "^") else (c, "*")) (toList $ formeBordure $ batimentForme b)
 
 -- Invariant: l'entrée des bâtiments n'est pas dans leur forme et est adjacente à leur forme
 prop_inv_entre_batiment :: Batiment -> Bool

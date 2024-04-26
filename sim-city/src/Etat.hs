@@ -23,9 +23,11 @@ updateOccCitoyen env@(Env h w envBat (Ville zones citoyens)) = Env h w envBat $ 
         Travailler -> updateForWork c 
         FaireCourses -> updateForShopping c 
         Dormir -> updateForSleeping c 
-        -- Deplacer coord -> citoyenMove c coord
-        _ -> c  -- Les autres occupations ne sont pas mises à jour
-        
+        Deplacer b -> if citoyenCoord c == batimentEntree b                       -- Si le citoyen est arrivé à destination
+            then updateOccCitoyen' $ getBatIdFromBatiment b                       -- Il met à jour son ocupation
+            else updateMove c b                                                   -- Sinon il continue de se déplacer
+        _ -> c
+
     updateForWork c
         | citoyenFatigue c == 0 = case citoyenBatimentRepos c of                           -- Si le citoyen est fatigué il se dirige vers sa maison pour se reposer
             Just m -> citoyenBatTarget c (getBatimentWithId env m)
@@ -43,23 +45,20 @@ updateOccCitoyen env@(Env h w envBat (Ville zones citoyens)) = Env h w envBat $ 
                 Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
                 _ ->  c -- a revoir
 
-
     updateForSleeping c
         | citoyenFatigue c < maxEnergie = c                                                -- il se repose tanqu'il n'ai pas en forme
         | otherwise = case citoyenBatimentTravail c of                                     -- Autrement il se dirige vers son batiment de travail si possible
             Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
             _ -> c -- a revoir
 
-
-        
-
-    -- getBatimentWithId :: Environement -> BatId -> Batiment
-    -- getBatimentWithId env bid = case Map.lookup bid (envBatiments env) of
-    --     Just b -> b
-    --     _ -> error "Batiment non trouvé"
-        
+    updateOccCitoyen' c bId
+        | bId == citoyenBatimentRepos c = citoyenUpdateOccupation c Dormir                  -- Si le citoyen est arrivé à sa maison il se repose
+        | bId == citoyenBatimentCourse c = citoyenUpdateOccupation c FaireCourses           -- Si le citoyen est arrivé à son batiment de course il fait les courses
+        | bId == citoyenBatimentTravail c = citoyenUpdateOccupation c Travailler            -- Si le citoyen est arrivé à son batiment de travail il travaille
+        | otherwise = c                                                                     -- Sinon il y reste (cas a voire)
     
-
+    updateMove c b = citoyenUpdateOccupation c (Deplacer b)                                
+    
     maxFaim = 10
     maxEnergie = 10
 
