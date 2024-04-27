@@ -11,7 +11,13 @@ import Data.Sequence (fromList)
 data Coord = C {
     cx :: Int,
     cy :: Int
-} deriving (Show, Eq, Ord)
+} deriving (Show)
+
+
+instance Eq Coord where
+    (C x1 y1) == (C x2 y2) = x1 == x2 && y1 == y2
+instance Ord Coord where
+    compare (C x1 y1) (C x2 y2) = compare (x1, y1) (x2, y2)
 
 data Forme =
         HSegement Coord Int

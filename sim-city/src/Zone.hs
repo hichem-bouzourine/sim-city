@@ -4,9 +4,9 @@
 module Zone where
 import Forme
 import Batiment
-import qualified Data.Foldable as Map
-import qualified Data.Map as Map
 import Data.Foldable
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 
 -- Définitions des zones et bâtiments
@@ -35,8 +35,8 @@ zoneBatiments (Admin _ b) = [b]
 zoneBatiments _ = []
 
 -- Cette fonction determine la map de zone
-zoneMap :: Zone -> Map.Map Coord String
-zoneMap z = let zMap  = foldr (`Map.insert` "-") Map.empty (formeBordure $ zoneForme z)
+zoneMap :: Zone -> Map Coord Char
+zoneMap z = let zMap  = foldr (`Map.insert` '#') Map.empty (formeBordure $ zoneForme z)
                in foldr (Map.union . batimentMap) zMap (zoneBatiments z)
 
 -- Invariant de forme pour les zone routiers 
@@ -123,38 +123,7 @@ prop_pre_retireBatiment zone batiment = batiment `elem` zoneBatiments zone
 -- Postcondition pour la fonction de suppression d'un bâtiment
 prop_post_retireBatiment :: Zone -> Zone -> Batiment -> Bool
 prop_post_retireBatiment zone nouvelleZone batiment =
-    notElem batiment (zoneBatiments nouvelleZone) &&  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent  -- Le bâtiment ne doit plus être présent
-      -- Le bâtiment ne doit plus être présent
+    notElem batiment (zoneBatiments nouvelleZone) &&  -- Le bâtiment ne doit plus être présent 
     length (zoneBatiments zone) == length (zoneBatiments nouvelleZone) + 1  -- Un bâtiment doit avoir été retiré
 
 -- Mise a jour d'un bâtiment d'une zone

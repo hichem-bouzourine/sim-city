@@ -53,6 +53,10 @@ villeGetCitoyen (Ville _ citoyens) cid = case Map.lookup cid citoyens of
     Just c -> c
     Nothing -> error "Citoyen non trouvé"
 
+-- Getter pour les CitId de la ville
+villeCitIds :: Ville -> [CitId]
+villeCitIds (Ville _ citoyens) = Map.keys citoyens
+
 -- Collision entre formes
 collision :: Forme -> Forme -> Bool
 collision  = collision_approx -- À redéfinir selon les regles precise

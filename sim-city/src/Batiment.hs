@@ -56,10 +56,10 @@ batimentCitoyens (Epicerie _ _ _ l) = l
 batimentCitoyens (Commissariat _ _) = []
 
 -- Cette fonction determine les contours d'un batiment
-batimentMap :: Batiment -> Map Coord String
+batimentMap :: Batiment -> Map Coord Char
 batimentMap b = Map.fromList $ map (\c -> 
     if batimentEntree b == c 
-        then (c, "^") else (c, "*")) (toList $ formeBordure $ batimentForme b)
+        then (c, '^') else (c, '*')) (toList $ formeBordure $ batimentForme b)
 
 -- Invariant: l'entrée des bâtiments n'est pas dans leur forme et est adjacente à leur forme
 prop_inv_entre_batiment :: Batiment -> Bool
