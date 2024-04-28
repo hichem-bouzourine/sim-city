@@ -71,6 +71,7 @@ test-suite sim-city-test
   other-modules:
       BatimentSpec
       CitoyenSpec
+      EnvironnementSpec
       FormeSpec
       VilleSpec
       ZoneSpec

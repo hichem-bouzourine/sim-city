@@ -15,13 +15,14 @@ import qualified Data.Set as Set
 
 import Zone (zoneBatiments)
 import Data.Foldable
+import Debug.Trace (trace)
 
 data Environnement = Env {
-    height :: Int,
-    width :: Int,
-    envBatiments :: Map BatId Batiment,
-    eville :: Ville,
-    eCarte :: Map Coord Char
+    height :: Int,                          -- Hauteur de la carte
+    width :: Int,                           -- Largeur de la carte
+    envBatiments :: Map BatId Batiment,     -- Liste des bâtiments de la ville
+    eville :: Ville,                        -- Ville
+    eCarte :: Map Coord Char                -- Carte de la ville
 }
 
 -- Getters Ville
@@ -31,6 +32,10 @@ envVille (Env _ _ _ v _) = v
 -- Getters Map
 envMap :: Environnement -> Map Coord Char
 envMap (Env _ _ _ _ m) = m
+
+-- Getter envBatiments
+getBatiments :: Environnement -> Map BatId Batiment
+getBatiments (Env _ _ b _ _) = b
 
 -- | Invariant: tout les batiments de la ville sont dans l'environnement envBatiments
 prop_inv_citoyen_batiment :: Environnement -> Bool
@@ -79,7 +84,7 @@ getBatIdFromBatiment batiment env =
 
 -- Cette fonction permet de mettre a jour un batiment dans l'environnement
 putBatimentWithId :: BatId -> Batiment -> Environnement -> Environnement
-putBatimentWithId bid bat env = env { envBatiments = Map.insert bid bat (envBatiments env) }
+putBatimentWithId bid bat (Env h w b v m) = Env h w (Map.insert bid bat b) v m
 
 -- cette fonction permet d'initialiser la map par rapport a une ville
 initMap ::  Ville -> Map Coord Char
@@ -122,7 +127,7 @@ zonneTest = Map.fromList [(ZoneId 3, Route (HSegement (C (-5) 5) 5))]
 villeTest = Ville zonneTest (Map.fromList [(CitId "1", Emigrant (C 0 0) Travailler), (CitId "2", Emigrant (C 1 1) Travailler)])
 
 -- >>> initMap  villeTest
--- fromList [(C {cx = 0, cy = 0},'X'),(C {cx = 1, cy = 1},'X')]
+-- fromList [(C {cx = -5, cy = 5},'#'),(C {cx = -4, cy = 5},'#'),(C {cx = -3, cy = 5},'#'),(C {cx = -2, cy = 5},'#'),(C {cx = -1, cy = 5},'#'),(C {cx = 0, cy = 0},'X'),(C {cx = 0, cy = 5},'#'),(C {cx = 1, cy = 1},'X')]
 
 -- Cette fonctin prend un tableau a deux dimension en une chaine de caracte representant la carte
 -- la bordure du tableau a gauche et droite par '|' et les bordure haut et bas par '_'
@@ -149,3 +154,6 @@ dFatigue = 5
 cFaim :: Int
 cFaim = -1
 
+-- define Show instance for Environnement
+instance Show Environnement where
+    show (Env h w b v m) = "Environnement { height = " ++ show h ++ ", width = " ++ show w ++ ", envBatiments = " ++ show b ++ ", ville = " ++ show v ++ ", eCarte = " ++ show m ++ " }"
