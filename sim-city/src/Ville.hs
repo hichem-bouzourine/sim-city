@@ -223,3 +223,12 @@ prop_post_ajouteCitoyen (Ville _ citoyens) (Ville _ citoyens' ) cit cid =
 getZoneBatiment :: Ville -> Batiment -> Maybe (ZoneId, Zone)
 getZoneBatiment (Ville zones _) batiment = 
     Map.foldrWithKey (\k z acc -> if batiment `elem` zoneBatiments z then Just (k, z) else acc) Nothing zones
+
+-- define Show ZoneId
+instance Show ZoneId where
+    show (ZoneId i) = "ZoneId " ++ show i
+
+
+-- define Show for Ville 
+instance Show Ville where
+    show (Ville zones citoyens) = "Ville {zones = " ++ show zones ++ ", citoyens = " ++ show citoyens ++ "}"
