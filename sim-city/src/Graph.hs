@@ -39,8 +39,8 @@ manhattanDistance :: Coord -> Coord -> Int
 manhattanDistance (C x1 y1) (C x2 y2) = abs (x1 - x2) + abs (y1 - y2)
 
 -- Fonction pour obtenir les voisins d'une coordonnée
-neighbors :: Coord -> [Coord]
-neighbors (C x y) = [C (x+1) y, C (x-1) y, C x (y+1), C x (y-1)]
+voisins :: Coord -> [Coord]
+voisins (C x y) = [C (x+1) y, C (x-1) y, C x (y+1), C x (y-1)]
 
 -- Fonction pour vérifier si une coordonnée est une route
 isRoute :: Map Coord Char -> Coord -> Bool
@@ -62,7 +62,7 @@ aStar gameMap start goal = reconstructPath <$> search
         current = fst $ head queue
         currentScore = fromMaybe (error "current not in gScore") (Map.lookup current gScore)
 
-        validNeighbors = filter (\neighbor -> isRoute gameMap neighbor) (neighbors current)
+        validNeighbors = filter (\neighbor -> isRoute gameMap neighbor) (voisins current)
         (openSet', queue', cameFrom', gScore') = foldr visit (Set.delete current openSet, tail queue, cameFrom, gScore) validNeighbors
 
         visit neighbor (openSet, queue, cameFrom, gScore) =
