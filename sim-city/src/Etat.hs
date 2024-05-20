@@ -9,12 +9,24 @@ import Batiment
 import Zone
 import Ville
 import qualified Data.Map as Map
+import Data.Map (Map)
+import Graph
+import Forme
 
 
 data Etat = Etat {
     tourNB :: Int,
     environnement :: Environnement
 }
+
+-- Cette fonction permet de representer un Etat
+showEtat :: Etat -> String
+showEtat etat = "Tour :" ++ show (tourNB etat) ++", NB Poppulation "++ 
+    show (nombreCitoyensTravail (envVille (environnement etat))) ++ ", NB de chomage :" 
+    ++ show (tauxChomage (envVille (environnement etat))) ++ ", NB client epicerie :" 
+    ++ show (nombreCitoyensCourses (envVille (environnement etat))) ++ "\n"
+    
+    ++ showEnvironment (environnement etat)
 
 --  Update the occupation of citizens based on their conditions
 updateOccCitoyen :: Environnement -> Environnement
@@ -63,11 +75,13 @@ updateOccCitoyen env@(Env h w envBat (Ville zones citoyens) carte) = Env h w env
     -- on va utuliser la carte pour trouver le plus cours chemin entre la position du citoyen et l'entree du batimet la ou il doit se deplacer
     -- retourne la coordener voisine du citoyen dans la direction du plus cours chemin
     -- updateMove :: Citoyen -> Coord -> Map Coord Char -> Citoyen
-    updateMove c _ = c
+    updateMove c dest = case findNext (citoyenCoord c) dest carte of 
+        Just coord -> updateCitoyenPosition c coord
+        _ -> c
 
 
-    maxFaim = 10
-    maxEnergie = 10
+maxFaim = 10
+maxEnergie = 10
 
 
 -- cette fonction permet met a jour l'etat(argent, fatigue, famine) d'un citoyen en fonction de son occupation
@@ -81,9 +95,47 @@ metAJourEtaCitoyen (Habitant coord (etat1, etat2, etat3) (mId, tId, cId) Dormir)
     -- il manque les autres type de citoyen a gerer 
 metAJourEtaCitoyen c = c
 
--- Cette fonction permet de mettre a jour l'etat de tous les citoyens d'une ville
-
-
+-- Cette fonction permet d'effectuer la transistion administrative
+-- Si un Immigration est a arriver a la porte d'entré du batiment ou il se deplaçait 
+-- on chercher cherche s'il exitste une maison de disponible dans la liste des batiments de repos
+-- si oui on le transform en Habitant avec comme batiments de repos la maison trouvé
+-- sinon on le transform en Emigrant 
+updateAdminstration :: Environnement -> Environnement
+updateAdminstration env@(Env h w envBat (Ville zones citoyens) carte) = 
+    let
+        citoyens' = Map.map transitionAdministrative' citoyens
+    in
+        Env h w envBat (Ville zones citoyens') carte
+    where
+        transitionAdministrative' :: Citoyen -> Citoyen
+        transitionAdministrative' c = case citoyenOccupation c of
+            Deplacer b -> if citoyenCoord c == batimentEntree b then
+                case getBatimentRepos env of
+                    Just (bid, _) -> Habitant (citoyenCoord c) (50, 0, 0) (bid, Nothing, Nothing) Dormir    -- On le transforme en Habitant avec une maison de repos
+                    _ -> Emigrant (citoyenCoord c) Dormir
+                else c
+            _ -> c
+            
+            
+-- Cette fonction permet de mettre d'assigner des batiments au citoyens
+-- elle recupere la liste de tout les batiments de travaille libre et les affecte au citoyns qui n'on pas de batiment de travaille
+-- elle recupere la liste de tout les batiments de course libre et les affecte au citoyns qui n'on pas de batiment de course
+-- elle retourne l'environnement mis a jour
+affecteBatiment :: Environnement -> Environnement
+affecteBatiment env@(Env _ _ _ (Ville _ citoyens) _) = 
+    let citoyensSansTravail = Map.filter (\c -> estCitoyenTravailleur c && case citoyenBatimentTravail c of
+            Just _ -> False
+            _ -> True) citoyens
+        citoyensSansCourse = Map.filter (\c -> estCitoyenFaireCourses c && case citoyenBatimentCourse c of
+            Just _ -> False
+            _ -> True) citoyens
+        env' = foldr (\cid acc -> case getBatimentTravail env of
+            Just (bid, _) -> affecteBatimentTravail acc bid cid
+            _ -> acc) env (Map.keys citoyensSansTravail)
+    in foldr (\cid acc -> case getBatimentCourse env of
+        Just (bid, _) -> affecteBatimentCourse acc bid cid
+        _ -> acc) env' (Map.keys citoyensSansCourse)
+        
 -- Fonction qui retire un citoyen d'une ville
 retireCitoyen :: Environnement -> CitId -> Environnement
 retireCitoyen (Env h w envBat (Ville zones citoyens) carte) cid =
@@ -126,12 +178,17 @@ prop_post_retireCitoyen env env' cid =
             Map.size citoyens' == Map.size citoyens - 1 &&          -- Il doit y avoir un citoyen de moins          -- Il doit y avoir un citoyen de moins
             notElem cid (villeBatimentsCitId (envVille env'))       -- Le citoyen ne doit plus être affecté à un bâtiment
 
--- Cette fonction permet de nettoyer un environement 
+-- Cette fonction permet de nettoyer un environement en supprimant tous les citoyens qui on etat en desous de 0
 cleanEnv :: Environnement -> Environnement
-cleanEnv env = foldr (flip retireCitoyen) env (villeCitIds (envVille env))
-
+cleanEnv env = Map.foldrWithKey aux env (viCit (envVille env))
+    where
+        aux :: CitId -> Citoyen -> Environnement -> Environnement
+        aux cId citoyen acc = case citoyenEtat citoyen of
+            Just (x, y, z) -> if x < 0 || y < 0 || z < 0 then retireCitoyen acc cId else acc
+            _ -> acc
+            
 -- Affecte un bâtiment de travail à un habitant, si possible
-affecteBatimentTravail :: Environnement -> BatId -> CitId -> Maybe Environnement
+affecteBatimentTravail :: Environnement -> BatId -> CitId -> Environnement
 affecteBatimentTravail env@(Env h w envBat v@(Ville zones citoyens) carte) batId citId =
     let
         -- ajout du citoyen au bâtiment spécifié dans la zone spécifiée
@@ -141,9 +198,9 @@ affecteBatimentTravail env@(Env h w envBat v@(Ville zones citoyens) carte) batId
         newCitoyen =  affecteBatimentTravail' (villeGetCitoyen v citId) batId
     in
         case getZoneBatiment v newBatiment of
-                Just (k, z) ->  Just  $ Env h w (Map.insert batId newBatiment envBat)                             -- mise a jour du batiment dans l'ennnuaire de l'enviroment 
+                Just (k, z) -> Env h w (Map.insert batId newBatiment envBat)                             -- mise a jour du batiment dans l'ennnuaire de l'enviroment 
                             (Ville (Map.insert k z zones ) (Map.insert citId newCitoyen citoyens)) carte             -- mise a jour du citoyen dans l'ennuaire de la ville
-                _ -> Nothing
+                _ -> error "Erreur d'affectation du batiment"
 
 -- Précondition pour l'affectation d'un bâtiment de travail
 prop_pre_affecteBatimentTravail :: Environnement  -> BatId -> CitId -> Bool
@@ -166,7 +223,7 @@ prop_post_affecteBatimentTravail (Env _ _ _ (Ville zones _) _) (Env _ _ envBat (
         _ -> False
 
 -- Affecte un bâtiment de course à un habitant, si possible
-affecteBatimentCourse :: Environnement -> BatId -> CitId -> Maybe Ville
+affecteBatimentCourse :: Environnement -> BatId -> CitId -> Environnement
 affecteBatimentCourse (Env h w envBat v@(Ville zones citoyens) carte) batId citId =
     let
         -- Tentative d'ajout du citoyen au bâtiment spécifié dans la zone spécifiée
@@ -176,8 +233,9 @@ affecteBatimentCourse (Env h w envBat v@(Ville zones citoyens) carte) batId citI
         newCitoyen = affecteBatimentCourse' (villeGetCitoyen v citId) batId
     in
         case getZoneBatiment v newBatiment of
-            Just (k, z) ->  Just  $ Ville (Map.insert k z zones ) (Map.insert citId newCitoyen citoyens)             -- mise a jour du citoyen dans l'ennuaire de la ville
-            _ -> Nothing
+            Just (k, z) ->  Env h w (Map.insert batId newBatiment envBat)                             -- mise a jour du batiment dans l'ennnuaire de l'enviroment 
+                            (Ville (Map.insert k z zones ) (Map.insert citId newCitoyen citoyens)) carte             -- mise a jour du citoyen dans l'ennuaire de la ville
+            _ -> error "Erreur d'affectation du batiment"
 
 -- Précondition pour l'affectation d'un bâtiment de course
 prop_pre_affecteBatimentCourse :: Environnement -> BatId -> CitId -> Bool
@@ -198,3 +256,6 @@ prop_post_affecteBatimentCourse (Env _ _ _ (Ville zones _) _) (Env _ _ envBat (V
     case citoyenBatimentCourse (citoyens' Map.! citId) of           -- Le citoyen doit être affecté au bâtiment
         Just bId -> bId == batId
         _ -> False
+
+intEtat :: Environnement-> Etat
+intEtat = Etat 0

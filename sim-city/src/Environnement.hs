@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
-module Environnement 
-   
+module Environnement
+
 where
 import Forme
 import Utils
@@ -15,13 +15,14 @@ import qualified Data.Set as Set
 
 import Zone (zoneBatiments)
 import Data.Foldable
+import qualified Data.Sequence as Seq
 
 data Environnement = Env {
-    height :: Int,
-    width :: Int,
-    envBatiments :: Map BatId Batiment,
-    eville :: Ville,
-    eCarte :: Map Coord Char
+    height :: Int,                              -- Hauteur de la carte
+    width :: Int,                               -- Largeur de la carte
+    envBatiments :: Map BatId Batiment,         -- Batiments de la ville
+    eville :: Ville,                            -- Ville
+    eCarte :: Map Coord Char                    -- Carte de la ville 
 }
 
 -- Getters Ville
@@ -31,6 +32,49 @@ envVille (Env _ _ _ v _) = v
 -- Getters Map
 envMap :: Environnement -> Map Coord Char
 envMap (Env _ _ _ _ m) = m
+
+-- Cette fonction permet de d'initialiser un environnement
+initEnv :: Int -> Int -> Environnement
+initEnv h w = Env h w Map.empty (Ville Map.empty Map.empty) Map.empty
+
+-- Cette fonction permet d'ajouter une zone a l'environnement
+envAddZone :: ZoneId -> Zone-> Environnement -> Environnement
+envAddZone zid z env@(Env h w b v m)
+    -- si les limites de la zone sont en dehors de la carte on retourne l'environnement
+    | not (contentSize (zoneForme z) h w) = env
+    | otherwise = Env h w b newVille newMap
+    where
+        newMap = Map.union m (zoneMap z)
+
+        newVille = case construitville v z zid of
+            Just ville -> ville
+            Nothing -> error "Zone not placeble in the city"
+
+-- Cette fonction permet de mettre d'ajouter un batiment dans l'environ
+envAddBatiment :: BatId -> Batiment -> ZoneId -> Environnement -> Environnement
+envAddBatiment bid bat zid (Env h w b v m) =
+    Env h w (Map.insert bid bat b) newVille  newMap
+        where
+            newMap = Map.union (batimentMap bat) m
+            newVille = case getZoneWithId v zid of
+                Just z ->
+                    -- on verifie si l'entree du batiment est ajaçant a une route
+                    if any (appartient (batimentEntree bat) . zoneForme) (villeZoneRoutes v)
+                        then case construitZone z bat of
+                                Just zone -> case construitville v zone zid of
+                                    Just ville -> ville
+                                    _ -> error "Zone not placeble in the city"
+                                Nothing -> error "Batiment not placeble in the zone"
+                        else error "Batiment entree not adjacent to zone road"
+                Nothing -> error "Zone not found in the city"
+
+
+
+-- Cette fonction permet d'ajouter un citoyen dans l'environnement
+envAddCitoyen :: CitId -> Citoyen -> Environnement -> Environnement
+envAddCitoyen cid cit (Env h w b (Ville z c) m) = Env h w b (Ville z (Map.insert cid cit c)) newMap
+    where
+        newMap = Map.insert (citoyenCoord cit) 'X' m
 
 -- | Invariant: tout les batiments de la ville sont dans l'environnement envBatiments
 prop_inv_citoyen_batiment :: Environnement -> Bool
@@ -72,15 +116,30 @@ isBatimentInEnv ::Environnement -> Batiment -> Bool
 isBatimentInEnv env bat = bat `elem` Map.elems (envBatiments env)
 
 
--- | This function retrieves the BatId for a given building from the environment.
+-- Cette fonction permet recuperer un batiment a partir de son identifiant
 getBatIdFromBatiment :: Batiment -> Environnement -> Maybe BatId
 getBatIdFromBatiment batiment env =
     Map.foldrWithKey (\k v acc -> if v == batiment then Just k else acc) Nothing (envBatiments env)
 
 -- Cette fonction permet de mettre a jour un batiment dans l'environnement
 putBatimentWithId :: BatId -> Batiment -> Environnement -> Environnement
-putBatimentWithId bid bat env = env { envBatiments = Map.insert bid bat (envBatiments env) }
+putBatimentWithId bid bat (Env h w b v m) = Env h w (Map.insert bid bat b) v m
 
+-- Cette fonction renvoie un batiment de travaille disponible dans la liste des batiments
+getBatimentTravail :: Environnement -> Maybe (BatId, Batiment)
+getBatimentTravail env = Map.foldrWithKey (\k b acc -> if estBatimentTravail b then Just (k, b) else acc) Nothing (envBatiments env)
+
+-- Cette fonction renvoie un batiment de repos disponible dans la liste des batiments
+getBatimentRepos :: Environnement -> Maybe (BatId, Batiment)
+getBatimentRepos env = Map.foldrWithKey (\k b acc -> if estBatimentRepos b then Just (k, b) else acc) Nothing (envBatiments env)
+
+-- Cette fonction renvoie un batiment de course disponible dans la liste des batiments
+getBatimentCourse :: Environnement -> Maybe (BatId, Batiment)
+getBatimentCourse env = Map.foldrWithKey (\k b acc -> if estBatimentCommerce b then Just (k, b) else acc) Nothing (envBatiments env)
+
+-- Cette fonction renvoie les commissariats dans la liste des batiments
+getCommissariats :: Environnement -> Maybe  (BatId, Batiment)
+getCommissariats env = Map.foldrWithKey (\k b acc -> if estBatimentCommissariat b then Just (k, b) else acc) Nothing (envBatiments env)
 -- cette fonction permet d'initialiser la map par rapport a une ville
 initMap ::  Ville -> Map Coord Char
 initMap  ville =
@@ -91,31 +150,9 @@ initMap  ville =
 -- chaque case est indexée par un couple Coord et contient une chaine de caractère la valeur de coord dans la map
 mapToTable :: Int -> Int -> Map Coord Char -> [[Char]]
 mapToTable h l coordsMap =
-    let
-        -- Calcul du centre du tableau
-        centerX = l `div` 2
-        centerY = h `div` 2
+    let coordsMapRevers = Map.fromList $ map (\(C x y, c) -> (C x (h - y - 1), c)) (Map.toList coordsMap)in
+    map (\y -> map (\x -> Map.findWithDefault ' ' (C x y) coordsMapRevers) [0..l-1]) [0..h-1]
 
-        -- Fonction auxiliaire pour ajuster les coordonnées par rapport au centre
-        coordAdjust (C x y) = C (x + centerX) (centerY - y)
-
-        -- Initialisation du tableau avec des espaces
-        initTable = replicate h (replicate l ' ')
-
-        -- Fonction auxiliaire pour placer une valeur dans le tableau
-        placeValue table (C x y) value
-            | x >= 0 && x < l && y >= 0 && y < h = take y table ++
-                [take x (table !! y) ++ [value] ++ drop (x + 1) (table !! y)] ++
-                drop (y + 1) table
-            | otherwise = table
-
-        -- Mise à jour du tableau avec toutes les valeurs de la carte
-        filledTable = foldl (\acc (coord, value) ->
-                        let adjustedCoord = coordAdjust coord
-                        in placeValue acc adjustedCoord value)
-                    initTable (Map.toList coordsMap)
-    in
-        filledTable
 
 zonneTest = Map.fromList [(ZoneId 3, Route (HSegement (C (-5) 5) 5))]
 
@@ -127,10 +164,19 @@ villeTest = Ville zonneTest (Map.fromList [(CitId "1", Emigrant (C 0 0) Travaill
 -- Cette fonctin prend un tableau a deux dimension en une chaine de caracte representant la carte
 -- la bordure du tableau a gauche et droite par '|' et les bordure haut et bas par '_'
 tableToString :: [[Char]] -> String
-tableToString = unlines . map (\line -> "|" ++ line ++ "|") . (:) (replicate 10 '_') . (++ [replicate 10 '_'])
+tableToString table@(firstLine:_) =
+    let topBottomBorder = " " ++ replicate (length firstLine) '_' ++ " "
+    in unlines $ [topBottomBorder] ++ map (\line -> "|" ++ line ++ "|") table ++ [topBottomBorder]
+tableToString [] = ""
+
+
+-- Cette fonction permet de 
+showEnvironment :: Environnement -> String
+showEnvironment env = tableToString $ mapToTable (height env) (width env) (envMap env)
 
 -- >>> tableToString $ mapToTable 11 11 (initMap villeTest)
 -- "|__________|\n|######     |\n|           |\n|           |\n|           |\n|      X    |\n|     X     |\n|           |\n|           |\n|           |\n|           |\n|           |\n|__________|\n"
+
 
 
 -- Parametres des citoyens

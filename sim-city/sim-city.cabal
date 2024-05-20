@@ -30,6 +30,7 @@ library
       Environnement
       Etat
       Forme
+      Graph
       Moteur
       Utils
       Ville
@@ -72,6 +73,7 @@ test-suite sim-city-test
       BatimentSpec
       CitoyenSpec
       FormeSpec
+      GraphSpec
       VilleSpec
       ZoneSpec
       Paths_sim_city

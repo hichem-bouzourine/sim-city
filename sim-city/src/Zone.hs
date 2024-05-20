@@ -38,6 +38,50 @@ zoneBatiments _ = []
 zoneMap :: Zone -> Map Coord Char
 zoneMap z = let zMap  = foldr (`Map.insert` '#') Map.empty (formeBordure $ zoneForme z)
                in foldr (Map.union . batimentMap) zMap (zoneBatiments z)
+-- Constructeur 
+-- Zone routier
+-- on verifie si la forme est une ligne horizontale ou verticale
+construitZoneRoute :: Forme -> Maybe Zone
+construitZoneRoute f = case f of
+    HSegement _ _ -> Just $ Route f         
+    VSegement _ _ -> Just $ Route f
+    _ -> Nothing
+
+--  Zone routier
+-- on verifie si la forme est une ligne horizontale ou verticale
+construitZoneEau :: Forme -> Maybe Zone
+construitZoneEau f = case f of
+    HSegement _ _ -> Just $ Eau f           
+    VSegement _ _ -> Just $ Eau f
+    _ -> Nothing
+
+-- Zone résidentielle
+-- on verifie si la forme est un rectangle
+construitZoneResidentielle :: Forme -> Maybe Zone
+construitZoneResidentielle f = case f of
+    Rectangle {} -> Just $ ZR f []
+    _ -> Nothing
+
+-- Zone industrielle
+-- on verifie si la forme est un rectangle
+construitZoneIndustrielle :: Forme -> Maybe Zone
+construitZoneIndustrielle f = case f of
+    Rectangle {} -> Just $ ZI f []
+    _ -> Nothing
+
+-- Zone commerciale
+-- on verifie si la forme est un rectangle
+construitZoneCommerciale :: Forme -> Maybe Zone
+construitZoneCommerciale f = case f of
+    Rectangle {} -> Just $ ZC f []
+    _ -> Nothing
+
+-- Zone administrative
+-- on verifie si la forme est un rectangle
+construitZoneAdmin :: Forme -> Batiment -> Maybe Zone
+construitZoneAdmin f b = case f of
+    Rectangle {} -> Just $ Admin f b
+    _ -> Nothing
 
 -- Invariant de forme pour les zone routiers 
 prop_inv_ZoneRouteForme :: Zone -> Bool
@@ -77,12 +121,35 @@ prop_inv_Zone z = prop_inv_ZoneRouteForme z && prop_inv_zoneBatiment z && prop_i
 newtype ZoneId = ZoneId Int deriving (Eq, Ord)
 
 -- Construit une zone en ajoutant un bâtiment
-construitZone :: Zone -> Batiment -> Zone
-construitZone (Admin f _) b = Admin f b
-construitZone (ZR f bs) b = ZR f (b:bs)
-construitZone (ZI f bs) b = ZI f (b:bs)
-construitZone (ZC f bs) b = ZC f (b:bs)
-construitZone _ _ = error "Impossible de construire un bâtiment dans cette zone: "
+-- si le batiment existe deja on le met juste a jour vu qu'on update pas la forme
+-- si le batiment n'existe pas on verifie si ils n'ai pas en collision avec les autres batiments
+construitZone :: Zone -> Batiment -> Maybe Zone
+construitZone zone b
+    | not $ contenue (batimentForme b) (zoneForme zone) = Nothing  -- La forme du bâtiment n'est pas contenue dans la zone
+    | b `elem` zoneBatiments zone = Just $ updateZoneBtiment zone b     -- Le bâtiment existe déjà, on le met à jour
+    | any (collision' (batimentForme b) . batimentForme) (zoneBatiments zone) = Nothing  -- Il y a une collision
+    |
+    --  adjacentes (batimentForme b) (zoneForme zone) &&                           -- Le bâtiment est adjacent à la zone                            
+                                   -- Le bâtiment est adjacent à la zone 
+        batimentEntree b `adjacent` zoneForme zone  &&     -- et l'entree doit etre aussi adjacente    
+        -- Les cabanes/ateliers/epiceries ne se trouvent que dans les zones r ́esidentielles/industrielles/commerciales.
+        case zone of
+            Route _ -> False                    -- impossible de construire dans une route
+            Eau _ -> False                      -- impossible de construire dans l'eau
+            Admin _ bat -> case bat of
+                Commissariat _ _ -> True        -- seul un commissariat peut etre construit dans une zone admin
+                _ -> False
+            _ -> True
+    = Just $ addBatimentToZone b zone
+    | otherwise = Nothing -- on serais dans un cas non gerer
+
+-- Ajoute un bâtiment à une zone
+addBatimentToZone :: Batiment -> Zone -> Zone
+addBatimentToZone b (ZR f bs) = ZR f (b:bs)
+addBatimentToZone b (ZI f bs) = ZI f (b:bs)
+addBatimentToZone b (ZC f bs) = ZC f (b:bs)
+addBatimentToZone b (Admin f _) = Admin f b
+addBatimentToZone _ zone = zone
 
 instance Eq Zone where
     (==) (Eau f) (Eau f') = f == f'
@@ -123,7 +190,8 @@ prop_pre_retireBatiment zone batiment = batiment `elem` zoneBatiments zone
 -- Postcondition pour la fonction de suppression d'un bâtiment
 prop_post_retireBatiment :: Zone -> Zone -> Batiment -> Bool
 prop_post_retireBatiment zone nouvelleZone batiment =
-    notElem batiment (zoneBatiments nouvelleZone) &&  -- Le bâtiment ne doit plus être présent 
+    notElem batiment (zoneBatiments nouvelleZone) &&  -- Le bâtiment ne doit plus être présent     -- Le bâtiment ne doit plus être présent     -- Le bâtiment ne doit plus être présent     -- Le bâtiment ne doit plus être présent   
+      -- Le bâtiment ne doit plus être présent   
     length (zoneBatiments zone) == length (zoneBatiments nouvelleZone) + 1  -- Un bâtiment doit avoir été retiré
 
 -- Mise a jour d'un bâtiment d'une zone
@@ -132,7 +200,7 @@ updateZoneBtiment (Admin f _) b = Admin f b
 updateZoneBtiment (ZR f bs) b = ZR f (map (\b' -> if b' == b then b else b') bs)
 updateZoneBtiment (ZI f bs) b = ZI f (map (\b' -> if b' == b then b else b') bs)
 updateZoneBtiment (ZC f bs) b = ZC f (map (\b' -> if b' == b then b else b') bs)
-updateZoneBtiment _ _ = error "Impossible de mettre à jour un bâtiment dans cette zone: "
+updateZoneBtiment zone _ = zone  -- Pour les autres types de zones, on ne modifie pas les bâtiments
 
 -- Précondition pour la fonction de mise à jour d'un bâtiment
 prop_pre_updateZoneBtiment :: Zone -> Batiment -> Bool
@@ -148,6 +216,13 @@ prop_post_updateZoneBtiment (Admin f _) (Admin f' b') b = f == f' && b == b'
 prop_post_updateZoneBtiment z1 z2 b = zoneForme z1 == zoneForme z2
     && b `elem` zoneBatiments z2
     && length (zoneBatiments z2) == length (zoneBatiments z1)
+
+
+-- Cette fonction verifie si un zonne est conforme : sans collision
+-- on verifie pas les colision entre un batiment et lui meme
+zoneConforme :: Zone -> Bool
+zoneConforme z = let bs = zoneBatiments z
+                     in all (\b -> all (\b' -> b == b' || not (collision' (batimentForme b) (batimentForme b'))) bs) bs
 
 -- instancer show pour les zones
 instance Show Zone where

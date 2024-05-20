@@ -15,13 +15,15 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 
+-- - Fonction tourEtat corrigée
 tourEtat :: Etat -> Etat
 tourEtat (Etat n env) =
-   let newEnv =case updateOccCitoyen env of
-               (Env h w envBatiments (Ville z c) m) ->
-                  Env h w envBatiments (Ville z updatecitoyen) m
-                     where
-                        -- nous allons applique metAJourEtaCitoyen a chaque citoyen
-                        updatecitoyen :: Map CitId Citoyen
-                        updatecitoyen =  Map.foldMapWithKey (\k cityon -> Map.insert k (metAJourEtaCitoyen cityon ) c) c
-                     in  Etat (n+1) $ cleanEnv newEnv
+    let newEnv = case updateOccCitoyen env of
+            (Env h w envBatiments (Ville z c) m) ->
+                let updatecitoyen :: Map CitId Citoyen
+                    updatecitoyen = Map.foldrWithKey (\k cityon acc -> Map.insert k (metAJourEtaCitoyen cityon) acc) Map.empty c
+                in Env h w envBatiments (Ville z updatecitoyen) m
+        nextEnv = case newEnv of
+            (Env h w envBatiments v m) ->
+                Env h w envBatiments v (initMap v)
+    in Etat (n+1) $ cleanEnv $ affecteBatiment $ updateAdminstration nextEnv -- on assigne les batiments aux citoyens et nettoie l'environnement

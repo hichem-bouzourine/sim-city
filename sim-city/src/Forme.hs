@@ -6,6 +6,7 @@ module Forme where
 import Data.Sequence (Seq)
 import Data.List (nub)
 import Data.Sequence (fromList)
+import Data.Foldable (toList)
 
 
 data Coord = C {
@@ -18,6 +19,9 @@ instance Eq Coord where
     (C x1 y1) == (C x2 y2) = x1 == x2 && y1 == y2
 instance Ord Coord where
     compare (C x1 y1) (C x2 y2) = compare (x1, y1) (x2, y2)
+
+creatCoord :: String -> String -> Coord
+creatCoord x y = C (read x) (read y)
 
 data Forme =
         HSegement Coord Int
@@ -45,14 +49,16 @@ appartient (C x y) (VSegement (C xx yy) l) = (x == xx) && (y <= yy) && (y >= y-l
 appartient (C x y) (Rectangle (C xx yy) l h) =(x >= xx) && (x <= x+l) && (y <= yy) && (y >= y-h)
 
 
-adjacent ::Coord -> Forme -> Bool
-adjacent (C x y) (HSegement (C xx yy) l) = (y == yy) && ((x >=xx) && (x <=xx+l))
-adjacent (C x y) (VSegement (C xx yy) l) = (x == xx) && ((y <= yy) && (y >= yy-l))
-adjacent (C x y) (Rectangle (C xx yy) l h) =
-       (x == xx) && ((y <= yy) && (y >= yy-h))
-    || (x == xx + l) && ((y <= yy) && (y >= yy - h))
-    || (y == yy) && ((x >= xx) && (x <= xx + l))
-    || (y == yy - h) && ((x >= xx) && (x <= xx + l))
+adjacent :: Coord -> Forme -> Bool
+adjacent (C cx cy) (HSegement (C x y) l) =
+  (cy == y && (cx == x - 1 || cx == x + l + 1)) || -- Adjacent horizontalement
+  (cx >= x && cx <= x + l && (cy == y - 1 || cy == y + 1)) -- Adjacent verticalement
+adjacent (C cx cy) (VSegement (C x y) l) =
+  (cx == x && (cy == y + 1 || cy == y - l - 1)) || -- Adjacent verticalement
+  (cy <= y && cy >= y - l && (cx == x - 1 || cx == x + 1)) -- Adjacent horizontalement
+adjacent (C cx cy) (Rectangle (C x y) w h) =
+  (cx >= x && cx <= x + w && (cy == y + 1 || cy == y - h - 1)) || -- Adjacent aux bords supérieur et inférieur
+  (cy <= y && cy >= y - h && (cx == x - 1 || cx == x + w + 1)) -- Adjacent aux bords gauche et droit
 
 -- >>> adjacent coord1 forme1
 -- False
@@ -94,9 +100,9 @@ adjacentes f1 f2 = adjacentes' f1 f2 || adjacentes' f2 f1
 
 adjacentes' :: Forme -> Forme -> Bool
 adjacentes' f1 f2 = let (y1, y2, x1, x2) = limites f1
-                    in adjacent (C x1 y1) f2 
-                    || adjacent (C x2 y2) f2 
-                    || adjacent (C x1 y2) f2 
+                    in adjacent (C x1 y1) f2
+                    || adjacent (C x2 y2) f2
+                    || adjacent (C x1 y2) f2
                     || adjacent (C x2 y1) f2
 formeAdj1 = Rectangle (C (-2) 6) 5 5
 formeAdj2 = Rectangle (C 1 1) 5 5
@@ -105,16 +111,64 @@ formeBordure :: Forme -> Seq Coord
 formeBordure forme = fromList $ nub $ case forme of
     HSegement (C x y) length -> [C x' y | x' <- [x..x+length]] -- Horizontal segment borders
     VSegement (C x y) length -> [C x y' | y' <- [y, y-1..y-length]] -- Vertical segment borders
-    Rectangle (C x y) width height -> nub $ -- Rectangle borders
-        [C x' y | x' <- [x..x+width]] ++ -- Top border
-        [C x' (y-height) | x' <- [x..x+width]] ++ -- Bottom border
+    -- Ainsi, la case de coordonn ́ees C -3 2 est situ ́ee juste au Nord de la case de coordonn ́ees C -3 1 et juste `a l’Est de la carte de coordonn ́ees C -4 2.
+--     un rectangle, repr ́esent ́e par les coordonn ́ees de son point le plus au Nord-Ouest, sa largeur (son  ́etendue
+-- sur l’axe Ouest-Est) et sa hauteur (son  ́etendue sur l’axe Nord-Sud)
+    Rectangle (C x y) width height -> nub $ 
+        [C x' y | x' <- [x..x+width]] ++ -- Top border 
+        [C x' (y-height) | x' <- [x..x+width]] ++  -- Bottom border
         [C x y' | y' <- [y, y-1..y-height]] ++ -- Left border
         [C (x+width) y' | y' <- [y, y-1..y-height]] -- Right border
 
+        -- [C x' y | x' <- [x..x+width]] -- North border
+        -- ++ [C x y' | y' <- [y, y-1..y-height]] -- West border
+        -- ++ [C x' y | x' <- [x..x+width]] -- South border
+        -- ++ [C x y' | y' <- [y, y-1..y-height]] -- East border
+
+formesAdjacent :: Forme -> Forme -> Bool
+formesAdjacent f1 f2 = let bor1 = formeBordure f1
+                           bor2 = formeBordure f2
+                       in any (\c -> adjacent c f1) bor2 || any (\c -> adjacent c f2) bor1
+
+-- Fonction pour vérifier si deux formes sont adjacentes et renvoyer les coordonnées de contact
+formesAdjacentPoints :: Forme -> Forme -> Maybe [Coord]
+formesAdjacentPoints forme1 forme2 = 
+    let bord1 = formeBordure forme1
+        bord2 = formeBordure forme2
+        adjCoords = filter (\c -> any (`adjacent` forme2) bord1) (toList bord1)
+    in if null adjCoords then Nothing else Just adjCoords
+
+
+-- Cette fonction verfie si une forme est contenue dans une autre
+contenue :: Forme -> Forme -> Bool
+contenue f1 f2 = let (y1, y2, x1, x2) = limites f1
+                     (y3, y4, x3, x4) = limites f2
+                 in (x1 >= x3) && (x2 <= x4) && (y1 <= y3) && (y2 >= y4)
+
+-- Cette fonction verifie si une forme peut se contenir dans un size  qui a pour orrigine 0 0
+contentSize :: Forme -> Int -> Int -> Bool
+contentSize  f l h = let (y1, y2, x1, x2) = limites f
+                      in (y1 <= h) && (y2 >= 0) && (x1 >= 0) && (x2 <= l)
+
+-- >>> contenue (Rectangle (C 5 5) 5 5) (Rectangle (C 10 5) 10 7)
 -- >>> formeBordure (HSegement (C 0 0) 5)
+-- False
 -- fromList [C {cx = 0, cy = 0},C {cx = 1, cy = 0},C {cx = 2, cy = 0},C {cx = 3, cy = 0},C {cx = 4, cy = 0},C {cx = 5, cy = 0}]
 
+-- >>> limites (Rectangle (C 2 2) 5 5)
+-- (2,-3,2,7)
+
+-- >>>  limites (Rectangle  (C 5 5) 10 10)
 -- >>> formeBordure (VSegement (C 0 0) 5)
+-- (5,-5,5,15)
+-- fromList [C {cx = 0, cy = 0},C {cx = 0, cy = -1},C {cx = 0, cy = -2},C {cx = 0, cy = -3},C {cx = 0, cy = -4},C {cx = 0, cy = -5}]
+
+
+-- fromList [C {cx = 0, cy = 0},C {cx = 0, cy = -1},C {cx = 0, cy = -2},C {cx = 0, cy = -3},C {cx = 0, cy = -4},C {cx = 0, cy = -5}]
+
+
+-- fromList [C {cx = 0, cy = 0},C {cx = 0, cy = -1},C {cx = 0, cy = -2},C {cx = 0, cy = -3},C {cx = 0, cy = -4},C {cx = 0, cy = -5}]
+
 -- fromList [C {cx = 0, cy = 0},C {cx = 0, cy = -1},C {cx = 0, cy = -2},C {cx = 0, cy = -3},C {cx = 0, cy = -4},C {cx = 0, cy = -5}]
 
 -- >>> formeBordure (Rectangle (C 0 0) 5 5)
@@ -123,8 +177,9 @@ formeBordure forme = fromList $ nub $ case forme of
 -- >>> adjacentes formeAdj1 formeAdj2
 -- fromList [C {cx = 0, cy = 0},C {cx = 1, cy = 0},C {cx = 2, cy = 0},C {cx = 3, cy = 0},C {cx = 4, cy = 0},C {cx = 5, cy = 0},C {cx = 0, cy = -5},C {cx = 1, cy = -5},C {cx = 2, cy = -5},C {cx = 3, cy = -5},C {cx = 4, cy = -5},C {cx = 5, cy = -5},C {cx = 0, cy = -1},C {cx = 0, cy = -2},C {cx = 0, cy = -3},C {cx = 0, cy = -4},C {cx = 5, cy = -1},C {cx = 5, cy = -2},C {cx = 5, cy = -3},C {cx = 5, cy = -4}]
 
--- >>> adjacentes (Rectangle (C (-5) (-4)) 5 5) (Rectangle (C 1 1) 5 5)
+-- >>> adjacentes (Rectangle (C (0) (29)) 20 20) (Rectangle (C 3 25) 5 5)
 -- False
+-- 
 
 
 -- instancier show pour les formes

@@ -55,11 +55,49 @@ batimentCitoyens (Atelier _ _ _ l) = l
 batimentCitoyens (Epicerie _ _ _ l) = l
 batimentCitoyens (Commissariat _ _) = []
 
+-- Cette fonction permet d'initialiser une cabane
+initCabane :: Forme -> Coord -> Int -> Maybe Batiment
+initCabane f c cap = if adjacent c f && cap > 0  &&       -- si l'entree est adjacente a la forme et la capacite est positive
+                case f of 
+                    Rectangle {} -> True                  -- Les batiments ne peuvent etre que des rectangles
+                    _ -> False
+                    then Just (Cabane f c cap [])
+                    else Nothing
+
+-- Cette fonction permet d'initialiser un atelier
+initAtelier :: Forme -> Coord -> Int -> Maybe Batiment
+initAtelier  f c cap = if adjacent c f && cap > 0  &&       -- si l'entree est adjacente a la forme et la capacite est positive
+                case f of 
+                    Rectangle {} -> True                  -- Les batiments ne peuvent etre que des rectangles
+                    _ -> False
+                    then Just (Cabane f c cap [])
+                    else Nothing
+
+-- Cette fonction permet d'initialiser une epicerie
+initEpicerie :: Forme -> Coord -> Int -> Maybe Batiment
+initEpicerie f c cap = if adjacent c f && cap > 0  &&       -- si l'entree est adjacente a la forme et la capacite est positive
+                case f of 
+                    Rectangle {} -> True                  -- Les batiments ne peuvent etre que des rectangles
+                    _ -> False
+                    then Just (Cabane f c cap [])
+                    else Nothing
+
+-- Cette fonction permet d'initialiser un commissariat
+initCommissariat :: Forme -> Coord -> Maybe Batiment
+initCommissariat f c = if adjacent c f &&       -- si l'entree est adjacente a la forme
+                case f of 
+                    Rectangle {} -> True                  -- Les batiments ne peuvent etre que des rectangles
+                    _ -> False
+                    then Just (Commissariat f c)
+                    else Nothing
+
+
+
 -- Cette fonction determine les contours d'un batiment
 batimentMap :: Batiment -> Map Coord Char
-batimentMap b = Map.fromList $ map (\c -> 
-    if batimentEntree b == c 
-        then (c, '^') else (c, '*')) (toList $ formeBordure $ batimentForme b)
+batimentMap b = 
+    let bordure  =  Map.fromList $ map (\c -> (c, '*')) (toList $ formeBordure $ batimentForme b)
+        in Map.insert (batimentEntree b) '^' bordure        -- On ajoute l'entree du batiment
 
 -- Invariant: l'entrée des bâtiments n'est pas dans leur forme et est adjacente à leur forme
 prop_inv_entre_batiment :: Batiment -> Bool
@@ -132,6 +170,17 @@ estBatimentTravail _ = False
 estBatimentCommerce :: Batiment -> Bool
 estBatimentCommerce (Epicerie {}) = True
 estBatimentCommerce _ = False
+
+-- Cette fonction verifie si un baiment est un batiment de repos
+estBatimentRepos :: Batiment -> Bool
+estBatimentRepos (Cabane {}) = True
+estBatimentRepos _ = False
+
+-- Cette fonction verifie si un baiment est un commissariat
+estBatimentCommissariat :: Batiment -> Bool
+estBatimentCommissariat (Commissariat {}) = True
+estBatimentCommissariat _ = False
+
 -- instancer show pour Batiments
 instance Show Batiment where
     show ( Cabane f c cap l ) = "Cabane " ++ show f ++ " " ++ show c ++ " " ++ show cap ++ " " ++ show l

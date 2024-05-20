@@ -13,8 +13,8 @@ data Occupation = Travailler | Dormir | FaireCourses | Deplacer Batiment derivin
 
 -- Type représentant un citoyen avec ses informations spécifiques
 data Citoyen = Immigrant Coord (Int, Int, Int) Occupation
-             | Habitant Coord (Int, Int, Int) (BatId, Maybe BatId, Maybe BatId) Occupation
-             | Emigrant Coord Occupation
+            | Habitant Coord (Int, Int, Int) (BatId, Maybe BatId, Maybe BatId) Occupation
+            | Emigrant Coord Occupation
 
 -- Instance d'égalité pour les citoyens
 instance Eq Citoyen where
@@ -78,6 +78,17 @@ citoyenBatimentCourse _ = Nothing
 citoyenBatimentRepos :: Citoyen -> Maybe BatId
 citoyenBatimentRepos (Habitant _ _ (mId, _, _) _) = Just mId
 citoyenBatimentRepos _ = Nothing
+
+-- Cette fonction verifie si un citoyen est apte a travailler   
+estCitoyenTravailleur :: Citoyen -> Bool
+estCitoyenTravailleur  (Habitant _ _ (_, _, _) _)= True
+estCitoyenTravailleur _ = False
+
+-- Cette fonction verifie si un citoyen est apte a faire des courses
+estCitoyenFaireCourses :: Citoyen -> Bool
+estCitoyenFaireCourses  (Habitant _ _ (_, _, _) _)= True
+estCitoyenFaireCourses _ = False
+
 -- Getter des batiments concernés pour un citoyen
 citoyenBatiments :: Citoyen -> [BatId]
 citoyenBatiments c = foldr includeIfJust [] [citoyenBatimentTravail c, citoyenBatimentCourse c, citoyenBatimentRepos c]
@@ -86,6 +97,11 @@ citoyenBatiments c = foldr includeIfJust [] [citoyenBatimentTravail c, citoyenBa
     includeIfJust (Just b) acc' = b : acc'
     includeIfJust _ acc' = acc'
 
+updateCitoyenPosition :: Citoyen -> Coord -> Citoyen
+updateCitoyenPosition (Habitant _ etat batIds occupation) coord = Habitant coord etat batIds occupation
+updateCitoyenPosition (Immigrant _ etat occupation) coord = Immigrant coord etat occupation
+updateCitoyenPosition (Emigrant _ occupation) coord = Emigrant coord occupation
+updateCitoyenPosition c _ = c
 -- Invariant pour vérifier l'état d'un citoyen
 prop_inv_etatCitoyen :: Citoyen -> Bool
 prop_inv_etatCitoyen citoyen = case citoyenEtat citoyen of
@@ -147,8 +163,7 @@ prop_post_transformeEnEmigrant _ _ = False  -- La postcondition ne s'applique pa
 -- cette fonction permet d'assingner un batiment de travail à un habitant
 affecteBatimentTravail' :: Citoyen -> BatId -> Citoyen
 affecteBatimentTravail' (Habitant coord etat (batId, _, _) _) batId' = Habitant coord etat (batId, Just batId', Nothing) Travailler
-affecteBatimentTravail' _ _ = error "Impossible d'affecter un bâtiment de travail à un citoyen qui n'est pas un habitant"
-
+affecteBatimentTravail' c _ = c 
 -- Précondition pour l'affectation d'un bâtiment de travail
 prop_pre_affecteBatimentTravail' :: Citoyen -> BatId -> Bool
 prop_pre_affecteBatimentTravail' (Habitant {}) _ = True
@@ -163,8 +178,7 @@ prop_post_affecteBatimentTravail' (Habitant coord etat (mId, _, cId) occupation)
 -- cette fonction permet d'assigner un batiment de course à un habitant
 affecteBatimentCourse' :: Citoyen -> BatId -> Citoyen
 affecteBatimentCourse' (Habitant coord etat (batId, _, _) _) batId' = Habitant coord etat (batId, Nothing, Just batId') FaireCourses
-affecteBatimentCourse' _ _ = error "Impossible d'affecter un bâtiment de course à un citoyen qui n'est pas un habitant"
-
+affecteBatimentCourse' c _ = c
 -- Précondition pour l'affectation d'un bâtiment de course
 prop_pre_affecteBatimentCourse' :: Citoyen -> BatId -> Bool
 prop_pre_affecteBatimentCourse' (Habitant {}) _ = True
