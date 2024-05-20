@@ -159,7 +159,7 @@ zonneTest = Map.fromList [(ZoneId 3, Route (HSegement (C (-5) 5) 5))]
 villeTest = Ville zonneTest (Map.fromList [(CitId "1", Emigrant (C 0 0) Travailler), (CitId "2", Emigrant (C 1 1) Travailler)])
 
 -- >>> initMap  villeTest
--- fromList [(C {cx = 0, cy = 0},'X'),(C {cx = 1, cy = 1},'X')]
+-- fromList [(C {cx = -5, cy = 5},'#'),(C {cx = -4, cy = 5},'#'),(C {cx = -3, cy = 5},'#'),(C {cx = -2, cy = 5},'#'),(C {cx = -1, cy = 5},'#'),(C {cx = 0, cy = 0},'X'),(C {cx = 0, cy = 5},'#'),(C {cx = 1, cy = 1},'X')]
 
 -- Cette fonctin prend un tableau a deux dimension en une chaine de caracte representant la carte
 -- la bordure du tableau a gauche et droite par '|' et les bordure haut et bas par '_'
@@ -195,3 +195,6 @@ dFatigue = 5
 cFaim :: Int
 cFaim = -1
 
+-- define Show instance for Environnement
+instance Show Environnement where
+    show (Env h w b v m) = "Environnement { height = " ++ show h ++ ", width = " ++ show w ++ ", envBatiments = " ++ show b ++ ", ville = " ++ show v ++ ", eCarte = " ++ show m ++ " }"

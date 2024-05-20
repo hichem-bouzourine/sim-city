@@ -5,6 +5,7 @@ import ZoneSpec as ZS
 import VilleSpec as VS
 import BatimentSpec as BS
 import CitoyenSpec as CS
+import EnvironnementSpec as ES
 
 main :: IO ()
 main = hspec $ do
@@ -13,3 +14,4 @@ main = hspec $ do
     VS.villeSpec
     BS.batimentSpec
     CS.citoyenSpec
+    ES.environnementSpec

@@ -269,3 +269,11 @@ zonesCollision (Ville zones _) = any (\(z1, z2) -> collision (zoneForme z1) (zon
 -- Cette fonction renvoie toute les zones routieres d'une ville
 villeZoneRoutes :: Ville -> [Zone]
 villeZoneRoutes (Ville zones _) = filter (\z -> case z of Route _ -> True; _ -> False) (Map.elems zones)
+-- define Show ZoneId
+instance Show ZoneId where
+    show (ZoneId i) = "ZoneId " ++ show i
+
+
+-- define Show for Ville 
+instance Show Ville where
+    show (Ville zones citoyens) = "Ville {zones = " ++ show zones ++ ", citoyens = " ++ show citoyens ++ "}"
