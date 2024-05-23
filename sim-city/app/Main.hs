@@ -1,295 +1,284 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
 module Main where
-import Forme
-import Environnement
-import Etat
-import Moteur
-import Data.Sequence (Seq)
-import Citoyen
-import Batiment
-import Utils
-import Zone
-import Ville
-import Forme (Forme(Rectangle), creatCoord)
-import Etat (Etat(environnement))
-import Data.Bool (Bool(True, False))
-import Batiment (initCabane)
-import Zone (construitZoneResidentielle, construitZoneAdmin)
-import Environnement (envAddBatiment)
-import Utils 
-import Graph
 
-import Control.Monad (unless, Monad (return))
+import Control.Monad (unless)
+import Control.Concurrent (threadDelay)
+
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.Maybe (Maybe(Just, Nothing))
-import Data.List (nub)
-import Data.Maybe (catMaybes)
+import qualified Data.Map as  Map
+
+import Data.List (foldl')
+
+import Foreign.C.Types (CInt (..) )
+
+import SDL
+import SDL.Time (time, delay)
+import Linear (V4(..))
+
+import TextureMap (TextureMap, TextureId (..))
+import qualified TextureMap as TM
+
+import Sprite (Sprite)
+import qualified Sprite as S
+
+import SpriteMap (SpriteMap, SpriteId (..))
+import qualified SpriteMap as SM
+
+import Keyboard (Keyboard)
+import qualified Keyboard as K
+import qualified Mouse as Ms
 
 
-afficheGame :: Etat -> IO ()
-afficheGame etat =  putStrLn $ showEtat etat
+import qualified Debug.Trace as T
 
-initGame :: IO Etat
-initGame = do
-    putStrLn "Bienvenue dans le jeu de la vie"
-    putStrLn "Veuillez entrer la hauteur de la carte"
-    -- h <- getLine
-    putStrLn "Veuillez entrer la largeur de la carte"
-    -- w <- getLine
-    -- on convrtie h et w en int
-    let h = "30"
-    let w = "30"
-    let env = initEnv (read h) (read w)
-    let etat = Etat 0 env
-    afficheGame etat
-    return etat
+import Componnent.Etat as E
+import Componnent.Forme as F
+import Componnent.Zone as Z
+import Componnent.Batiment as B
+import Componnent.Citoyen as C
+import Componnent.Ville as V
+import Componnent.Environnement as Env
+import Componnent.Utils as U
+          
+
+-- import Model (GameState)
+import qualified Componnent.Moteur as M
+import SDL.Event (Event(Event), eventPayload, mouseButtonEventButton, mouseButtonEventPos)
+import GHC.Base (when)
 
 
--- Cette fonction represente les manupilation du menu 
--- il fais une demande entre 3 option ajouter zone, ajouter un batiment etc
--- et retourne l'etat de jeu
-menuEtat :: Etat -> IO Etat
-menuEtat etat = do
-    putStrLn "Veuillez choisir une action"
-    putStrLn "1. Ajouter une zone"
-    putStrLn "2. Ajouter un batiment"
-    putStrLn "3. Ajouter un citoyen"
-    putStrLn "4. Passer au tour suivant"
-    putStrLn "5. Quitter"
-    action <- getLine
-    case action of
-        "1" -> do
-            putStrLn "Veillez entrer l'identifiant de la zone"
-            zoneId <- getLine
-            -- let zoneId = "1"
-            -- data Zone = Eau Forme
-                --  | Route Forme
-                --  | ZR Forme [Batiment]
-                --  | ZI Forme [Batiment]
-                --  | ZC Forme [Batiment]
-                --  | Admin Forme Batiment
-            putStrLn "Veuillez entrer le type de la zone (E, R, ZR, ZI, ZC, A) qui represente Eau, Route, Zone Residentielle, Zone Industrielle, Zone Commerciale, Admin"
-            typeZone <- getLine
-            -- let typeZone = "ZR"
-            putStrLn "Veuillez entrer la position x puis y de la zone"
-            posX <- getLine
-            posY <- getLine
-            -- let posX = "0"
-            -- let posY = "10"
-            putStrLn "Veuillez entrer la forme de la zone (H, V, R)" 
-            forme <- getLine
-            -- let forme = "R"
+spriteForm :: Forme -> (Int, Int, Int, Int)
+spriteForm (F.Rectangle (C x y) w h) = (x, y, w, h)
+spriteForm _ =  error "spriteForm not implemented for this type"
 
-            let formeBuild = case forme of
-                    "H" -> do
-                        putStrLn "Veuillez entrer la longueur du segment"
-                        HSegement (creatCoord posX posY) . read <$> getLine
-                    "V" -> do
-                        putStrLn "Veuillez entrer la hauteur du segment"
-                        VSegement (creatCoord posX posY) . read <$> getLine
-                    "R" -> do
-                        putStrLn "Veuillez entrer la largeur du rectangle"
-                        largeur <- getLine
-                        -- let largeur = "10"
-                        putStrLn "Veuillez entrer la hauteur du rectangle"
-                        Rectangle (creatCoord posX posY) (read largeur) . read <$> getLine
-            let z = do
-                    forme <- formeBuild
-                    case typeZone of
-                        "E" -> case construitZoneEau forme of
-                            Just z -> return (z, Nothing, Nothing)
-                            Nothing -> error "Forme de zone invalide"
-
-                        "R" -> case construitZoneRoute forme of
-                            Just z -> return (z, Nothing, Nothing)
-                            Nothing -> error "Forme de zone invalide"
-
-                        "ZR" -> case construitZoneResidentielle forme of
-                            Just z -> return (ZR forme [], Nothing, Nothing)
-                            Nothing -> error "Forme de zone invalide"
-
-                        "ZI" -> case construitZoneIndustrielle forme of
-                            Just z -> return (ZI forme [], Nothing, Nothing)
-                            Nothing -> error "Forme de zone invalide"
-
-                        "ZC" -> case construitZoneCommerciale forme of
-                            Just z -> return $ (ZC forme [], Nothing, Nothing)
-                            Nothing -> error "Forme de zone invalide"
-
-                        "A" -> do
-                            putStrLn "Veuillez entrer l'identifiant du commissariat"
-                            commissariatId <- getLine
-                            putStrLn "Veuillez entrer la position du commissariat"
-                            putStrLn "position x "
-                            posX <- getLine
-                            putStrLn "position y "
-                            posY <- getLine
-
-                            putStrLn "Veuillez entrer la largeur Commissariat"
-                            largeur <- getLine
-                            putStrLn "Veuillez entrer la hauteur Commissariat"
-                            hauteur <- getLine
-                            let posBatiment = creatCoord posX posY
-                            let foromBat = Rectangle posBatiment (read largeur) (read hauteur)
-                            putStrLn "Veuillez entrer la position de l'entrée du commissariat"
-                            putStrLn "position x "
-                            posX <- getLine
-                            putStrLn "position y "
-                            posY <- getLine
-                            let entree = creatCoord posX posY
-                            let batiment = Commissariat foromBat entree
-                            case construitZoneAdmin forme batiment of
-                                Just z -> return (z, Just (BatId $ read commissariatId), Just batiment)
-            let env = do
-                    z@(zone, _, _) <- z
-                    let newEnv = case z of
-                            (zone, Nothing, Nothing) -> environnement etat 
-                            (zone, Just batId, Just batiment) -> putBatimentWithId batId batiment (environnement etat)
-                    
-                    return $ envAddZone (ZoneId (read zoneId)) zone newEnv
-            let etat' = Etat (tourNB etat) <$> env
-            etat'
-
-        "2" -> do
-            putStrLn "Veillez entrer l'identifiant de la zone"
-            zoneId <- getLine
-            putStrLn "Veuillez entrer l'identifiant du batiment"
-            batimentId <- getLine
-            putStrLn "Veuillez entrer le type du batiment (A, E, C, CB) qui represente  Atelier, Epicerie, Commissariat et Cabane"
-            typeBatiment <- getLine
-            putStrLn "Veuillez entrer la position du batiment"
-            putStrLn "position x "
-            posX <- getLine
-            putStrLn "position y "
-            posY <- getLine
-            let posBatiment = creatCoord posX posY
-            putStrLn "Veuillez entrer la position de l'entrée du batiment"
-            putStrLn "position x "
-            posX <- getLine
-            putStrLn "position y "
-            posY <- getLine
-            let entree = creatCoord posX posY
-            case typeBatiment of
-
-                "A" -> do
-                    putStrLn "Veuillez entrer la largeur de l'atelier"
-                    largeur <- getLine
-                    putStrLn "Veuillez entrer la hauteur de l'atelier"
-                    hauteur <- getLine
-                    putStrLn "Veuillez entrer la capacité du batiment"
-                    capacite <- getLine
-
-                    let forme = Rectangle posBatiment (read largeur) (read hauteur)
-                    let batiment = case initCabane forme entree (read capacite) of
-                                    Just b -> b
-                                    Nothing -> error "Erreur lors de la création de la cabane"
-                    let env = envAddBatiment (BatId $ read batimentId) batiment (ZoneId $ read zoneId) (environnement etat)
-                    let etat' = Etat (tourNB etat) env
-                    -- afficheGame etat'
-                    return etat'
-                "E" -> do
-                    putStrLn "Veuillez entrer la largeur de l'epicerie"
-                    largeur <- getLine
-                    putStrLn "Veuillez entrer la hauteur de l'epicerie"
-                    hauteur <- getLine
-                    putStrLn "Veuillez entrer la capacité du batiment"
-                    capacite <- getLine
-
-                    let forme = Rectangle posBatiment (read largeur) (read hauteur)
-                    let batiment = case initCabane forme entree (read capacite) of
-                                    Just b -> b
-                                    Nothing -> error "Erreur lors de la création de la cabane"
-                    let env = envAddBatiment (BatId $ read batimentId) batiment (ZoneId $ read zoneId) (environnement etat)
-                    let etat' = Etat (tourNB etat) env
-                    -- afficheGame etat'
-                    return etat'
-                "C" -> do
-                    putStrLn "Veuillez entrer la largeur Commissariat"
-                    largeur <- getLine
-                    putStrLn "Veuillez entrer la hauteur Commissariat"
-                    hauteur <- getLine
-
-                    let forme = Rectangle posBatiment (read largeur) (read hauteur)
-                    let batiment = Commissariat forme entree
-                    let env = envAddBatiment (BatId $ read batimentId) batiment (ZoneId $ read zoneId) (environnement etat)
-                    let etat' = Etat (tourNB etat) env
-                    -- afficheGame etat'
-                    return etat'
-
-                "CB" -> do
-                    putStrLn "Veuillez entrer la largeur de la cabane"
-                    largeur <- getLine
-                    putStrLn "Veuillez entrer la hauteur de la cabane"
-                    hauteur <- getLine
-                    putStrLn "Veuillez entrer la capacité du batiment"
-                    capacite <- getLine
-                    let forme = Rectangle posBatiment (read largeur) (read hauteur)
-                    let batiment = case initCabane forme entree (read capacite) of
-                                    Just b -> b
-                                    Nothing -> error "Erreur lors de la création de la cabane"
-                    let env = envAddBatiment (BatId $ read batimentId) batiment (ZoneId $ read zoneId) (environnement etat)
-                    let etat' = Etat (tourNB etat) env
-                    -- afficheGame etat'
-                    return etat'
-        "3" -> do
-            putStrLn "Veuillez entrer l'identifiant du citoyen"
-            citoyenId <- getLine
-            putStrLn "Veuillez entrer le type de citoyen (E, H, I) Emmigrant, Habitant ou Immigran"
-            typeCitoyen <- getLine
-            putStrLn "Veuillez entrer la position "
-            putStrLn "position x "
-            posX <- getLine
-            putStrLn "position y "
-            posY <- getLine
-            let position = creatCoord posX posY
-            case typeCitoyen of
-                "E" -> do
-                    let citoyen = Emigrant position Dormir
-                    let env = envAddCitoyen (CitId citoyenId) citoyen (environnement etat)
-                    let etat' = Etat (tourNB etat) env
-                    -- afficheGame etat'
-                    return etat'
-                "H" -> do
-                    putStrLn "Veuillez entrer l'identifiant du batiment de repos"
-                    batimentRepos <- getLine
-                    let citoyen = Habitant position (50, 50, 50) (BatId (read batimentRepos), Nothing, Nothing) Dormir
-                    let env = envAddCitoyen (CitId citoyenId) citoyen (environnement etat)
-                    let etat' = Etat (tourNB etat) env
-                    -- afficheGame etat'
-                    return etat'
-                "I" -> do
-                    case getCommissariats (environnement etat) of
-                        Just (batimentId, batiment) -> do                       -- on recupere le premier commissariat
-                            let citoyen = Immigrant position (50, 50, 50) $ Deplacer $  batiment     -- le l'imigrant se deplace vers le commissariat
-                            let env = envAddCitoyen (CitId citoyenId) citoyen (environnement etat)
-                            let etat' = Etat (tourNB etat) env
-                            -- afficheGame etat'
-                            return etat'
-                        Nothing -> do
-                            putStrLn "Aucun commissariat n'est disponible"
-                            return etat
-
-        "4" -> return $ tourEtat etat
-        "5" -> return etat
-        _ -> do
-            putStrLn "Action inconnue"
-            return $ tourEtat etat
+loadComponnent :: Renderer-> FilePath -> TextureMap -> SpriteMap -> String -> Forme -> IO (TextureMap, SpriteMap)
+loadComponnent rdr path tmap smap id forme = do
+  putStrLn $ "Chargement de l'image: " <> path <> " avec l'id: " <> id
+  tmap' <- TM.loadTexture rdr path (TextureId id) tmap
+  let (a, b, c, d) = spriteForm forme
+  let sprite = S.defaultScale $ S.addImage S.createEmptySprite $ S.createImage (TextureId id) (S.mkArea (fromIntegral a) (fromIntegral (b))  (fromIntegral c) (fromIntegral d))
+  let smap' = SM.addSprite (SpriteId id) sprite smap
+  return (tmap', smap')
 
 main :: IO ()
 main = do
-    etat <- initGame
-    -- on appelle la fonction menuEtat pour afficher le menu
-    -- puis on affiche le jeu a l'infinie sans relancer le main
+  initializeAll
+  window <- createWindow "Minijeu" $ defaultWindow { windowInitialSize = V2 1200 800 }
+  renderer <- createRenderer window (-1) defaultRenderer
+  -- chargement de l'image du fond
+  (tmap, smap) <- loadComponnent renderer "assets/background.bmp" TM.createTextureMap SM.createSpriteMap "background" (F.Rectangle (C 0 0) 1200 800)
+  -- initialisation de l'état du jeu
+  let gameState = E.initEtat 400 1200 800
+  -- initialisation de l'état du clavier
+  let kbd = K.createKeyboard
+  -- lancement de la gameLoop
+  gameLoop 60 renderer tmap smap kbd gameState 0 0
 
-    let loop etat = do
-            etat' <- menuEtat etat
-            afficheGame etat'
-            unless (False) $ loop etat'
-    loop etat
-    
+displayState :: Renderer -> TextureMap -> SpriteMap -> Etat -> IO ()
+displayState renderer tmap smap gameState = do
+  let env = environnement gameState
+  let ville = eville env
+  let citoyens = viCit ville
+  let batiments = envBatiments env
+  -- Affichage du fond
+  S.displaySprite renderer tmap (SM.fetchSprite (SpriteId "background") smap)
+  
+  -- Affichage des zones
+  Map.traverseWithKey (\k z -> 
+    let (x,y,_,_) = spriteForm $ zoneForme z 
+    in S.displaySprite renderer tmap (S.moveTo (SM.fetchSprite (SpriteId (show k)) smap) (fromIntegral x) (fromIntegral y))) (viZones ville)
+    -- Affichage des bâtiments
+  Map.traverseWithKey (\k z ->
+    let (x,y,_,_) = spriteForm $ batimentForme z
+    in S.displaySprite renderer tmap (S.moveTo (SM.fetchSprite (SpriteId (show k)) smap) (fromIntegral x) (fromIntegral y))) batiments
+  -- Affichage des citoyens
+  Map.traverseWithKey (\k c ->
+    let (C x y) = citoyenCoord c
+    in do
+      -- putStrLn $ "<<<<<<<<Coordonnee de du citoyen>>>>> " <> show k <> ": " <> show x <> ", " <> show y
+      S.displaySprite renderer tmap (S.moveTo (SM.fetchSprite (SpriteId (show k)) smap) (fromIntegral x) (fromIntegral y))) citoyens
+
+  
+  return ()
 
 
 
+gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard -> Etat -> Int -> Int-> IO ()
+gameLoop frameRate renderer tmap smap kbd gameState lstId nb = do
+  startTime <- time
+  events <- pollEvents
+  let kbd' = K.handleEvents events kbd
+  -- Recupere la dernier coordonnee de la souris
+  let coord' =  foldl' (\acc e -> Ms.handleEvent e) Nothing events
+
+  (id', gameState', tmap', smap') <- (updateAction gameState kbd' lstId tmap smap renderer)
+  (id', gameState'', tmap', smap') <- (updateClick gameState' coord' id' tmap' smap' renderer)
+
+  -- Affichage de l'état du jeu
+  displayState renderer tmap' smap' gameState'
+
+  present renderer
+  -- Calcul du délai pour maintenir le framerate
+  endTime <- time
+  let refreshTime = endTime - startTime
+  let delayTime = floor (((1.0 / frameRate) - refreshTime) * 1000)
+  threadDelay $ delayTime * 1000 -- microseconds
+  endTime <- time
+  let deltaTime = endTime - startTime
+
+  when (coord' /= Nothing)
+    (case coord' of
+      Just (x, y) -> putStrLn $ "Coordonnee de la souris: " <> (show x) <> ", " <> (show y)
+      Nothing -> putStrLn "Coordonnee de la souris: Nothing")
+
+  when (id' /= lstId)
+    (afficheGame gameState'')
+  let gameState''' = M.tourEtat gameState'' kbd' deltaTime
+  -- showEtat gameState'''
+  unless (K.keypressed KeycodeEscape kbd') $ gameLoop frameRate renderer tmap' smap' kbd' gameState''' id' (nb+1)
+
+-- Définition de la fonction updateAction
+updateAction :: Etat -> Keyboard -> Int -> TextureMap -> SpriteMap -> Renderer -> IO (Int, Etat, TextureMap, SpriteMap)
+updateAction gameState kbd id tmap smap renderer = do
+  if K.valideKeyPressed kbd then
+    return $ (id, updateSelected gameState $ Just kbd, tmap, smap)
+  else return $ (id, gameState, tmap, smap)
+
+  -- updateClick prend en entrée l'état du jeu, une coordonnée optionnelle, un identifiant, une map de texture, une map de sprite, et un renderer
+updateClick :: Etat -> Maybe (Int, Int) -> Int -> TextureMap -> SpriteMap -> Renderer -> IO (Int, Etat, TextureMap, SpriteMap)
+updateClick gameState coord id tmap smap renderer = do
+    case selected gameState of
+        Nothing -> do
+                    return (id, gameState, tmap, smap)
+        Just kb -> do
+                    case coord of
+                        Nothing -> return (id, gameState, tmap, smap)
+                        Just (x, y) -> do 
+                          putStrLn $ "Click OOK: " <> (show x) <> ", " <> (show y)
+                          if K.keypressed KeycodeC kb then do
+                            (tmap, smap) <- loadComponnent renderer "assets/perso.bmp" tmap smap ("CitId " ++ show id) (F.Rectangle (C x y) 5 5)
+                            let gameState' = updateLastMousePosition (updateSelected gameState Nothing) Nothing
+                            return $ (id+1, addImmigrant id (C x y) gameState', tmap, smap)
+                          else
+                            case lastMousePosition gameState of
+                                Nothing -> do 
+                                  putStrLn "last updated"
+                                  return (id, updateLastMousePosition gameState (Just (C x y)), tmap, smap)
+                                Just c@(C x1 y1)  -> do
+                                    if x1 == x && y1 == y then
+                                        return (id, gameState, tmap, smap)
+                                    else case selected gameState of
+                                        Nothing -> return (id, gameState, tmap, smap)
+                                        Just kb -> do 
+                                          putStrLn "building component"
+                                          buildComponent kb c (C x y) id gameState tmap smap renderer
+
+-- Cette fonction reçoit une action clavier, une position de départ et de fin, ainsi qu'un état
+-- Il construit suivant l'action le composant dans la zone début fin de l'environnement de l'état actuel du jeu
+buildComponent :: Keyboard -> Coord -> Coord -> Int -> Etat -> TextureMap -> SpriteMap -> Renderer -> IO (Int, Etat, TextureMap, SpriteMap)
+buildComponent kbd start end id etat@(Etat n env coin _ lmp) tmap smap renderer = do
+    if K.pressedZonesKey kbd 
+        then do
+            let rout = case buildRectangle start end of 
+                        Just f -> 
+                              if K.keypressed KeycodeR kbd then ("assets/route.bmp", construitZoneRoute f) 
+                              else if K.keypressed KeycodeE kbd then ("assets/eau.bmp", construitZoneEau f)
+                              else if K.keypressed KeycodeI kbd then ("assets/industrie.bmp", construitZoneIndustrielle f)
+                              else if K.keypressed KeycodeM kbd then ("assets/commerce.bmp", construitZoneCommerciale f)
+                              else if K.keypressed KeycodeV kbd then ("assets/residentiel.bmp", construitZoneResidentielle f)
+                              else if K.keypressed KeycodeA kbd then ("assets/administration.bmp", case findDoor f env of
+                                                                                              Just d -> construitZoneAdmin f $ Commissariat f d
+                                                                                              Nothing -> Nothing)
+                              else ("", Nothing)
+                        Nothing -> ("", Nothing)
+            case rout of
+                (link , Just r) -> do
+                    case (envAddZone (ZoneId id) r env) of 
+                      Just e -> do
+                        putStrLn $ "Construction d'une zone " ++ show start
+                        (tmap, smap) <- loadComponnent renderer link tmap smap ("ZoneId " ++ show id) (zoneForme r) 
+                        return (id + 1, Etat n e (coin - 10) Nothing Nothing, tmap, smap)
+                      _ -> do
+                          putStrLn "Error zone construction"
+                          let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
+                          return (id, etat', tmap, smap)
+
+                _ -> do
+                  putStrLn "Error zone construction"
+                  let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
+                  return (id, etat', tmap, smap)
+                    
+        else if K.keypressed KeycodeA kbd
+            then do
+              let adm = case buildRectangle start end of 
+                              Just f -> case findDoor f env of
+                                          Just d -> 
+                                            construitZoneAdmin f $ Commissariat f d
+                                          Nothing -> Nothing  
+                              Nothing -> Nothing
+              case adm of
+                  Just a -> do
+                    putStrLn $ "Construction d'une zone administrative " ++ show start
+                    (tmap', smap') <- loadComponnent renderer "assets/administration.bmp" tmap smap ("ZoneId " ++ show id) (zoneForme a)
+                    (tmap'', smap'') <- loadComponnent renderer "assets/police.bmp" tmap' smap' ("BatId " ++ show id) (zoneForme a)
+                    putStrLn $ "<<Batiment entre>> " ++ show (batimentEntree(head (zoneBatiments a)))
+                    putStrLn $ "<<Batiment head>> " ++ show (head (zoneBatiments a))
+                    case envAddZone (ZoneId id) a env of 
+                      Just newEnv -> do
+                          case envAddBatiment (BatId id) (head (zoneBatiments a)) (ZoneId id) newEnv of 
+                            Just newEnv' -> do
+                              return (id + 1, Etat n newEnv' (coin - 10) Nothing Nothing, tmap'', smap'')
+                            _ -> do
+                              putStrLn "Error Administration not supported aa "
+                              let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
+                              return (id, etat', tmap, smap)
+                      _ -> do
+                              putStrLn "Error Administration not supported bbb"
+                              let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
+                              return (id, etat', tmap, smap)
+                  _ -> do
+                      putStrLn "Error Administration not supported c"
+                      let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
+                      return (id, etat', tmap, smap)
+        else if K.keypressedBatiment kbd
+            then do
+                let epi = case buildRectangle start end of 
+                            Just f -> case findDoor f env of
+                                        Just d -> 
+                                          if K.keypressed KeycodeG kbd 
+                                          then ("assets/magasin.bmp", initEpicerie f d $ air f)
+                                          else if K.keypressed KeycodeK kbd 
+                                          then ("assets/cabane.bmp", initCabane f d $ air f)
+                                          else if K.keypressed KeycodeW kbd 
+                                          then ("assets/atelier.bmp", initAtelier f d $ air f)
+                                          else ("", Nothing)
+                                        _ -> ("", Nothing)
+                            _ -> ("", Nothing)
+                case epi of
+                    (link, Just e) -> do
+                        case getZoneWithCoord env start of
+                          Nothing -> do 
+                            let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
+                            return (id, etat', tmap, smap)
+                          Just (zid, _) -> do
+                            case (envAddBatiment (BatId id) e zid env) of 
+                              Just env' -> do
+                                (tmap, smap) <- loadComponnent renderer link tmap smap ("BatId " ++ show id) (batimentForme e)
+                                return (id + 1, Etat n env' (coin - 10) Nothing Nothing, tmap, smap)
+                              _ -> do
+                                putStrLn "Error Key not supported"
+                                let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
+                                return (id, etat', tmap, smap)
+                    _ -> do
+                      putStrLn "Error Epicerie not supported"
+                      let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
+                      return (id, etat', tmap, smap)
+                                else do 
+                                  putStrLn "Error Key not supported"
+                                  let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
+                                  return (id, etat', tmap, smap)
+
+afficheGame :: Etat -> IO ()
+afficheGame etat =  putStrLn $ showEtat etat

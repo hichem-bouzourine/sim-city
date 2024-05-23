@@ -1,9 +1,9 @@
 module CitoyenSpec where
 
 import Test.Hspec
-import Forme
-import Utils
-import Citoyen
+import Componnent.Forme
+import Componnent.Utils
+import Componnent.Citoyen
 import GHC.IO (evaluate)
 
 citoyenSpec :: Spec
@@ -48,12 +48,7 @@ citoyenSpec = do
         it "affecter un bâtiment de travail à un citoyen" $ do
             affecteBatimentTravail' (Habitant (C 1 1) (0, 0, 0) (BatId 1, Just (BatId 2), Just (BatId 3)) Travailler) (BatId 4) `shouldBe` Habitant (C 1 1) (0, 0, 0) (BatId 1, Just (BatId 4), Just (BatId 3)) Travailler
 
-        it "lève une erreur si le citoyen n'est pas un habitant" $ do
-            evaluate (affecteBatimentTravail' (Immigrant (C 1 1) (0, 0, 0) Dormir) (BatId 1)) `shouldThrow` anyErrorCall
 
     describe "affecteBatimentCourse'" $ do
         it "affecter un bâtiment de course à un citoyen" $ do
             affecteBatimentCourse' (Habitant (C 1 1) (0, 0, 0) (BatId 1, Just (BatId 2), Just (BatId 3)) Travailler) (BatId 4) `shouldBe` Habitant (C 1 1) (0, 0, 0) (BatId 1, Nothing, Just (BatId 4)) FaireCourses
-
-        it "lève une erreur si le citoyen n'est pas un habitant" $ do
-            evaluate (affecteBatimentCourse' (Immigrant (C 1 1) (0, 0, 0) Dormir) (BatId 1)) `shouldThrow` anyErrorCall

@@ -2,9 +2,9 @@ name:                sim-city
 version:             0.1.0.0
 github:              "githubuser/sim-city"
 license:             BSD-3-Clause
-author:              "Author name here"
+author:              "BOUZOURINE Hichem & Diallo Elhadj Alseiny"
 maintainer:          "example@example.com"
-copyright:           "2024 Author name here"
+copyright:           "2024 BOUZOURINE Hichem & Diallo Elhadj Alseiny"
 
 extra-source-files:
 - README.md
@@ -24,6 +24,9 @@ dependencies:
 - hspec
 - QuickCheck
 - containers
+- sdl2
+- linear
+- random
 
 ghc-options:
 - -Wall
@@ -50,6 +53,9 @@ executables:
     dependencies:
     - sim-city
     - containers
+    - sdl2
+    - linear
+    - random
 
 tests:
   sim-city-test:
@@ -62,3 +68,6 @@ tests:
     dependencies:
     - sim-city
     - containers
+    - sdl2
+    - linear
+    - random

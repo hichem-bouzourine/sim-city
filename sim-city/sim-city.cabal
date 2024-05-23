@@ -9,9 +9,9 @@ version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/sim-city#readme>
 homepage:       https://github.com/githubuser/sim-city#readme
 bug-reports:    https://github.com/githubuser/sim-city/issues
-author:         Author name here
+author:         BOUZOURINE Hichem & Diallo Elhadj Alseiny
 maintainer:     example@example.com
-copyright:      2024 Author name here
+copyright:      2024 BOUZOURINE Hichem & Diallo Elhadj Alseiny
 license:        BSD-3-Clause
 license-file:   LICENSE
 build-type:     Simple
@@ -25,16 +25,22 @@ source-repository head
 
 library
   exposed-modules:
-      Batiment
-      Citoyen
-      Environnement
-      Etat
-      Forme
-      Graph
-      Moteur
-      Utils
-      Ville
-      Zone
+      Componnent.Batiment
+      Componnent.Citoyen
+      Componnent.Environnement
+      Componnent.Etat
+      Componnent.Forme
+      Componnent.Graph
+      Componnent.Moteur
+      Componnent.Utils
+      Componnent.Ville
+      Componnent.Zone
+      Keyboard
+      Model
+      Mouse
+      Sprite
+      SpriteMap
+      TextureMap
   other-modules:
       Paths_sim_city
   autogen-modules:
@@ -47,6 +53,9 @@ library
     , base >=4.7 && <5
     , containers
     , hspec
+    , linear
+    , random
+    , sdl2
   default-language: Haskell2010
 
 executable sim-city-exe
@@ -63,6 +72,9 @@ executable sim-city-exe
     , base >=4.7 && <5
     , containers
     , hspec
+    , linear
+    , random
+    , sdl2
     , sim-city
   default-language: Haskell2010
 
@@ -88,5 +100,8 @@ test-suite sim-city-test
     , base >=4.7 && <5
     , containers
     , hspec
+    , linear
+    , random
+    , sdl2
     , sim-city
   default-language: Haskell2010
