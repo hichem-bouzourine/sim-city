@@ -5,11 +5,8 @@ import Componnent.Zone
 
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.List (minimumBy, nub)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Sequence (Seq(..))
-import qualified Data.Sequence as Seq
-import Data.Ord (comparing)
 import qualified Data.Set as Set
 
 -- Type pour représenter un graphe 
@@ -92,8 +89,8 @@ aStar gameMap start goal = reconstructPath <$> search
       | snd x <= snd y = x : ys
       | otherwise = y : insertSorted x ys'
 
--- Fonction pour trouver la prochaine direction
-findNext :: Coord -> Coord -> Map Coord Char -> Maybe Coord
-findNext start goal gameMap = case aStar gameMap start goal of
-  Nothing -> Nothing
-  Just path -> if null path then Nothing else Just (last path)
+-- -- Fonction pour trouver la prochaine direction
+-- findNext :: Coord -> Coord -> Map Coord Char -> [Coord]
+-- findNext start goal gameMap = case aStar gameMap start goal of
+--   Nothing -> Nothing
+--   Just path -> if null path then Nothing else Just (last path)

@@ -117,9 +117,9 @@ newtype ZoneId = ZoneId Int deriving (Eq, Ord)
 -- si le batiment n'existe pas on verifie si ils n'ai pas en collision avec les autres batiments
 construitZone :: Zone -> Batiment -> Maybe Zone
 construitZone zone b
-    | not $ contenue (batimentForme b) (zoneForme zone) = Nothing  -- La forme du bâtiment n'est pas contenue dans la zone
+    | not $ contenue (batimentForme b) (zoneForme zone) = Just zone  -- La forme du bâtiment n'est pas contenue dans la zone
     | b `elem` zoneBatiments zone = Just $ updateZoneBtiment zone b     -- Le bâtiment existe déjà, on le met à jour
-    | any (collision (batimentForme b) . batimentForme) (zoneBatiments zone) = Nothing  -- Il y a une collision
+    | any (collision (batimentForme b) . batimentForme) (zoneBatiments zone) = Just zone  -- Il y a une collision
     |
      adjacentes (batimentForme b) (zoneForme zone) &&                           -- Le bâtiment est adjacent à la zone                            
                                    -- Le bâtiment est adjacent à la zone 

@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Componnent.Etat where
 
 import Componnent.Citoyen
@@ -7,12 +8,12 @@ import Componnent.Utils
 import Componnent.Batiment
 import Componnent.Zone
 import Componnent.Ville
-import Componnent.Graph
 import Componnent.Forme
 
 import qualified Data.Map as Map
 import Data.Map (Map)
 import Keyboard (Keyboard)
+import Componnent.Graph (aStar)
 
 data Etat = Etat {
     tourNB :: Int,
@@ -37,7 +38,7 @@ updateLastMousePosition (Etat n env coin kbd _) lmp = Etat n env coin kbd lmp
 addImmigrant :: Int -> Coord -> Etat -> Etat
 addImmigrant id c e@(Etat n env coin _ lmp) = 
     let cityoen = case (getCommissariats env, isRoadPoint env c) of
-                    (Just (_, com), True) -> Just $ Immigrant c (50, 50, 50) $ Deplacer com
+                    (Just (_, com), True) -> Just $ Immigrant c (50, 50, 50) $ Deplacer com Nothing
                     _ -> Nothing
     in case cityoen of
         -- Si on a une voie ou débarquer l'immigrant et un commissariat pour l'intégrer
@@ -57,8 +58,8 @@ showEtat etat = "Tour :" ++ show (tourNB etat) ++", NB Poppulation "++
     -- ++ showEnvironment (environnement etat)
 
 --  Update the occupation of citizens based on their conditions
-updateOccCitoyen :: Environnement -> Environnement
-updateOccCitoyen env@(Env h w envBat v@(Ville zones citoyens) carte) = Env h w envBat (Ville zones (Map.map updateOccupation citoyens)) carte
+updateOccCitoyens :: Environnement -> Environnement
+updateOccCitoyens env@(Env h w envBat v@(Ville zones citoyens) carte) = Env h w envBat (Ville zones (Map.map updateOccupation citoyens)) carte
   where
     updateOccupation :: Citoyen -> Citoyen
     updateOccupation c =
@@ -66,9 +67,9 @@ updateOccCitoyen env@(Env h w envBat v@(Ville zones citoyens) carte) = Env h w e
         Travailler -> updateForWork c
         FaireCourses -> updateForShopping c
         Dormir -> updateForSleeping c
-        Deplacer b -> if citoyenCoord c == batimentEntree b                             -- Si le citoyen est arrivé à destination
+        Deplacer b p -> if citoyenCoord c == batimentEntree b                             -- Si le citoyen est arrivé à destination
             then updateOccCitoyen' c (getBatIdFromBatiment b env)                       -- Il met à jour son ocupation
-            else updateMove c $ batimentEntree b                                                   -- Sinon il continue de se déplacer
+            else updateMove c b p                                                  -- Sinon il continue de se déplacer
         _ -> c
 
     updateForWork c
@@ -95,7 +96,6 @@ updateOccCitoyen env@(Env h w envBat v@(Ville zones citoyens) carte) = Env h w e
             _ -> c -- a revoir
 
     updateOccCitoyen' c bId
-        | bId == citoyenBatimentRepos c = citoyenUpdateOccupation c Dormir                  -- Si le citoyen est arrivé à sa maison il se repose
         | bId == citoyenBatimentCourse c = citoyenUpdateOccupation c FaireCourses           -- Si le citoyen est arrivé à son batiment de course il fait les courses
         | bId == citoyenBatimentTravail c = citoyenUpdateOccupation c Travailler            -- Si le citoyen est arrivé à son batiment de travail il travaille
         | otherwise = c -- Sinon il y reste (cas a voire)
@@ -103,11 +103,13 @@ updateOccCitoyen env@(Env h w envBat v@(Ville zones citoyens) carte) = Env h w e
     -- on va utuliser la carte pour trouver le plus cours chemin entre la position du citoyen et l'entree du batimet la ou il doit se deplacer
     -- retourne la coordener voisine du citoyen dans la direction du plus cours chemin
     -- updateMove :: Citoyen -> Coord -> Map Coord Char -> Citoyen
-    updateMove c dest = case findNext (citoyenCoord c) dest (initMap v) of
-        Just coord -> updateCitoyenPosition c coord
-        _ -> error "updateMove failed"  
-
-
+    updateMove :: Citoyen -> Batiment -> Maybe [Coord] -> Citoyen
+    updateMove c b p = case p of 
+                        (Just (x:xs)) -> updateCitoyenPosition (citoyenFindTarget c b xs) x
+                        _-> case  aStar (initMap v) (citoyenCoord c) (batimentEntree b) of 
+                            Just a -> updateCitoyenPosition (citoyenFindTarget c b $ tail (reverse a) ++ [batimentEntree b]) $ last a
+                            _ -> c
+                        _ -> c
 maxFaim = 10
 maxEnergie = 10
 
@@ -137,9 +139,9 @@ updateAdminstration env@(Env h w envBat (Ville zones citoyens) carte) =
     where
         transitionAdministrative' :: Citoyen -> Citoyen
         transitionAdministrative' c = case citoyenOccupation c of
-            Deplacer b -> if citoyenCoord c == batimentEntree b then
+            Deplacer b _ -> if citoyenCoord c == batimentEntree b then
                 case getBatimentRepos env of
-                    Just (bid, _) -> Habitant (citoyenCoord c) (50, 0, 0) (bid, Nothing, Nothing) Dormir    -- On le transforme en Habitant avec une maison de repos
+                    Just (bid, b) -> Habitant (citoyenCoord c) (50, 0, 0) (bid, Nothing, Nothing) $ Deplacer b Nothing
                     _ -> Emigrant (citoyenCoord c) Dormir
                 else c
             _ -> c

@@ -9,7 +9,7 @@ import Componnent.Batiment (Batiment)
 -- import Data.Map (Map)
 -- import qualified Data.Map as Map
 
-data Occupation = Travailler | Dormir | FaireCourses | Deplacer Batiment deriving (Show, Eq)
+data Occupation = Travailler | Dormir | FaireCourses | Deplacer Batiment (Maybe [Coord]) deriving (Show, Eq)
 
 -- Type représentant un citoyen avec ses informations spécifiques
 data Citoyen = Immigrant Coord (Int, Int, Int) Occupation
@@ -42,9 +42,9 @@ citoyenEtat (Emigrant _ _) = Nothing  -- Les émigrants n'ont pas d'état défin
 
 -- Fonction de mise a jour de l'occupation
 citoyenUpdateOccupation :: Citoyen -> Occupation -> Citoyen
-citoyenUpdateOccupation (Immigrant coord etat _) occupation = Immigrant coord etat occupation 
+citoyenUpdateOccupation (Immigrant coord etat _) occupation = Immigrant coord etat occupation
 citoyenUpdateOccupation (Habitant coord etat batIds _) occupation = Habitant coord etat batIds occupation
-citoyenUpdateOccupation (Emigrant coord _) occupation = Emigrant coord occupation 
+citoyenUpdateOccupation (Emigrant coord _) occupation = Emigrant coord occupation
 
 -- Getter de l'argent pour les citoyens
 citoyenArgent :: Citoyen -> Int
@@ -97,11 +97,13 @@ citoyenBatiments c = foldr includeIfJust [] [citoyenBatimentTravail c, citoyenBa
     includeIfJust (Just b) acc' = b : acc'
     includeIfJust _ acc' = acc'
 
+-- Fonction pour mettre à jour la position d'un citoyen
 updateCitoyenPosition :: Citoyen -> Coord -> Citoyen
 updateCitoyenPosition (Habitant _ etat batIds occupation) coord = Habitant coord etat batIds occupation
 updateCitoyenPosition (Immigrant _ etat occupation) coord = Immigrant coord etat occupation
 updateCitoyenPosition (Emigrant _ occupation) coord = Emigrant coord occupation
 updateCitoyenPosition c _ = c
+
 -- Invariant pour vérifier l'état d'un citoyen
 prop_inv_etatCitoyen :: Citoyen -> Bool
 prop_inv_etatCitoyen citoyen = case citoyenEtat citoyen of
@@ -163,7 +165,7 @@ prop_post_transformeEnEmigrant _ _ = False  -- La postcondition ne s'applique pa
 -- cette fonction permet d'assingner un batiment de travail à un habitant
 affecteBatimentTravail' :: Citoyen -> BatId -> Citoyen
 affecteBatimentTravail' (Habitant coord etat (batId, _, _) _) batId' = Habitant coord etat (batId, Just batId', Nothing) Travailler
-affecteBatimentTravail' c _ = c 
+affecteBatimentTravail' c _ = c
 -- Précondition pour l'affectation d'un bâtiment de travail
 prop_pre_affecteBatimentTravail' :: Citoyen -> BatId -> Bool
 prop_pre_affecteBatimentTravail' (Habitant {}) _ = True
@@ -192,7 +194,18 @@ prop_post_affecteBatimentCourse' (Habitant coord etat (mId, _, cId) occupation) 
 
 -- Cette fonction permet d'assigner un target de batiment a un citoyen
 citoyenBatTarget :: Citoyen -> Batiment -> Citoyen
-citoyenBatTarget (Habitant coord etat (mId, tId, cId) _) batiment = Habitant coord etat (mId, tId, cId) (Deplacer batiment)
+citoyenBatTarget (Habitant coord etat (mId, tId, cId) _) batiment = Habitant coord etat (mId, tId, cId) (Deplacer batiment Nothing)
+
+
+-- data Citoyen = Immigrant Coord (Int, Int, Int) Occupation
+--             | Habitant Coord (Int, Int, Int) (BatId, Maybe BatId, Maybe BatId) Occupation
+--             | Emigrant Coord Occupation
+
+-- Cette fonction permet de affecter un target de deplacement vers tout citoyen
+citoyenFindTarget :: Citoyen -> Batiment -> [Coord] -> Citoyen
+citoyenFindTarget (Habitant coord etat (mId, tId, cId) _) batiment path = Habitant coord etat (mId, tId, cId) (Deplacer batiment (Just path))
+citoyenFindTarget (Immigrant coord etat _) batiment path = Immigrant coord etat (Deplacer batiment (Just path))
+citoyenFindTarget (Emigrant coord _) batiment path = Emigrant coord (Deplacer batiment (Just path))
 
 instance Show Citoyen where
     show ( Immigrant coord etat occupation ) =

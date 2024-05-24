@@ -9,9 +9,6 @@ import Data.Sequence (fromList)
 import Data.Foldable (toList)
 import Data.List (minimumBy)
 import Data.Ord (comparing)
-import Data.Maybe (mapMaybe, isJust, fromJust)
-import Data.Sequence (Seq)
-import Data.Foldable (toList)
 data Coord = C {
     cx :: Int,
     cy :: Int
@@ -66,7 +63,7 @@ distance :: Coord -> Coord -> Int
 distance (C x1 y1) (C x2 y2) = abs (x1 - x2) + abs (y1 - y2)
 
 margin :: Int
-margin = 1
+margin = 50
 
 adjacent :: Coord -> Forme  -> Bool
 adjacent (C cx cy) (HSegement (C x y) l) =
@@ -93,8 +90,7 @@ collision  f1 f2 = let bordure = formeBordure f1
 -- une fonction adjacentes :: Forme -> Forme -> Bool qui prend en entr´ee deux formes et d´ecide si les deux formes sont adjacentes 
 -- (c’est-`a-dire si elles se touchent sans se superposer).
 adjacentes :: Forme -> Forme -> Bool
-adjacentes f1 f2 = not (collision f1 f2) && (formesAdjacent f1 f2 || formesAdjacent f2 f1)
-
+adjacentes f1 f2 = (formesAdjacent f1 f2 || formesAdjacent f2 f1)
 
 -- Cette fonction renvoie toutes les coordonnées de la bordure d'une forme
 formeBordure :: Forme -> Seq Coord
@@ -108,7 +104,6 @@ formeBordure forme = fromList $ nub $ case forme of
               [C x' (y + height) | x' <- [x..x + width]] ++ -- Bordure inférieure
               [C x y' | y' <- [y..y + height]] ++ -- Bordure gauche
               [C (x + width) y' | y' <- [y..y + height]] -- Bordure droite
-
 
 formesAdjacent :: Forme -> Forme -> Bool
 formesAdjacent f1 f2 = let bor1 = formeBordure f1

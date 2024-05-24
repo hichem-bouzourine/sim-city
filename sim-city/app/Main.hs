@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-unused-do-bind #-}
 module Main where
 
 import Control.Monad (unless)
@@ -47,6 +48,7 @@ import Componnent.Utils as U
 import qualified Componnent.Moteur as M
 import SDL.Event (Event(Event), eventPayload, mouseButtonEventButton, mouseButtonEventPos)
 import GHC.Base (when)
+import System.Posix.Internals (puts)
 
 
 spriteForm :: Forme -> (Int, Int, Int, Int)
@@ -92,12 +94,15 @@ displayState renderer tmap smap gameState = do
     -- Affichage des bâtiments
   Map.traverseWithKey (\k z ->
     let (x,y,_,_) = spriteForm $ batimentForme z
-    in S.displaySprite renderer tmap (S.moveTo (SM.fetchSprite (SpriteId (show k)) smap) (fromIntegral x) (fromIntegral y))) batiments
+    in do
+      S.displaySprite renderer tmap (S.moveTo (SM.fetchSprite (SpriteId (show k)) smap) (fromIntegral x) (fromIntegral y))) batiments
   -- Affichage des citoyens
   Map.traverseWithKey (\k c ->
     let (C x y) = citoyenCoord c
     in do
-      -- putStrLn $ "<<<<<<<<Coordonnee de du citoyen>>>>> " <> show k <> ": " <> show x <> ", " <> show y
+      putStrLn $ "<<<<<<<<Coordonnee de du citoyen>>>>> " <> show k <> ": " <> show x <> ", " <> show y
+      putStrLn $ "<<<<<<<Occupation du citoyen>>>>>> " <> show (citoyenOccupation c)
+      -- on affiche sont batiment entre
       S.displaySprite renderer tmap (S.moveTo (SM.fetchSprite (SpriteId (show k)) smap) (fromIntegral x) (fromIntegral y))) citoyens
 
   
@@ -158,7 +163,7 @@ updateClick gameState coord id tmap smap renderer = do
                         Just (x, y) -> do 
                           putStrLn $ "Click OOK: " <> (show x) <> ", " <> (show y)
                           if K.keypressed KeycodeC kb then do
-                            (tmap, smap) <- loadComponnent renderer "assets/perso.bmp" tmap smap ("CitId " ++ show id) (F.Rectangle (C x y) 5 5)
+                            (tmap, smap) <- loadComponnent renderer "assets/perso.bmp" tmap smap ("CitId " ++ show id) (F.Rectangle (C x y) 20 20)
                             let gameState' = updateLastMousePosition (updateSelected gameState Nothing) Nothing
                             return $ (id+1, addImmigrant id (C x y) gameState', tmap, smap)
                           else
@@ -265,18 +270,20 @@ buildComponent kbd start end id etat@(Etat n env coin _ lmp) tmap smap renderer 
                           Just (zid, _) -> do
                             case (envAddBatiment (BatId id) e zid env) of 
                               Just env' -> do
+                                putStrLn $ "Construction d'un batiment " ++ show start
                                 (tmap, smap) <- loadComponnent renderer link tmap smap ("BatId " ++ show id) (batimentForme e)
                                 return (id + 1, Etat n env' (coin - 10) Nothing Nothing, tmap, smap)
+
                               _ -> do
-                                putStrLn "Error Key not supported"
+                                putStrLn "Error Key not supported a"
                                 let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
                                 return (id, etat', tmap, smap)
                     _ -> do
-                      putStrLn "Error Epicerie not supported"
+                      putStrLn "Error Key not supported b"
                       let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
                       return (id, etat', tmap, smap)
                                 else do 
-                                  putStrLn "Error Key not supported"
+                                  putStrLn "Error Key not supported c"
                                   let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
                                   return (id, etat', tmap, smap)
 

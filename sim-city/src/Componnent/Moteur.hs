@@ -7,6 +7,7 @@ import Componnent.Batiment
 import Componnent.Ville
 import Componnent.Zone
 import Componnent.Etat
+
 import Componnent.Environnement hiding (envBatiments)
 import Keyboard (Keyboard)
 
@@ -18,7 +19,7 @@ import qualified Data.Set as Set
 -- - Fonction tourEtat corrigée
 tourEtat :: RealFrac a => Etat -> Keyboard -> a -> Etat
 tourEtat (Etat n env c h l) kbd time =
-    let newEnv = case updateOccCitoyen env of
+    let newEnv = case updateOccCitoyens env of
             (Env h w envBatiments (Ville z c) m) ->
                 let updatecitoyen :: Map CitId Citoyen
                     updatecitoyen = Map.foldrWithKey (\k cityon acc -> Map.insert k (metAJourEtaCitoyen cityon) acc) Map.empty c
