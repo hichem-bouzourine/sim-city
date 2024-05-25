@@ -177,22 +177,12 @@ initMap  ville =
     let zMap = foldr (\z acc -> Map.union acc (zoneMap z)) Map.empty (villeZones ville)
     in foldr (\c acc -> Map.insert (citoyenCoord c) 'X' acc) zMap (villeCitoyens ville)
 
-        
-
 -- Cette fonction permet de transformer une carte en tableau a deux dimentsion donc 
 -- chaque case est indexée par un couple Coord et contient une chaine de caractère la valeur de coord dans la map
 mapToTable :: Int -> Int -> Map Coord Char -> [[Char]]
 mapToTable h l coordsMap =
     let coordsMapRevers = Map.fromList $ map (\(C x y, c) -> (C x (h - y - 1), c)) (Map.toList coordsMap)in
     map (\y -> map (\x -> Map.findWithDefault ' ' (C x y) coordsMapRevers) [0..l-1]) [0..h-1]
-
-
-zonneTest = Map.fromList [(ZoneId 3, Route (HSegement (C (-5) 5) 5))]
-
-villeTest = Ville zonneTest (Map.fromList [(CitId "1", Emigrant (C 0 0) Travailler), (CitId "2", Emigrant (C 1 1) Travailler)])
-
--- >>> initMap  villeTest
--- fromList [(C {cx = -5, cy = 5},'#'),(C {cx = -4, cy = 5},'#'),(C {cx = -3, cy = 5},'#'),(C {cx = -2, cy = 5},'#'),(C {cx = -1, cy = 5},'#'),(C {cx = 0, cy = 0},'X'),(C {cx = 0, cy = 5},'#'),(C {cx = 1, cy = 1},'X')]
 
 -- Cette fonctin prend un tableau a deux dimension en une chaine de caracte representant la carte
 -- la bordure du tableau a gauche et droite par '|' et les bordure haut et bas par '_'

@@ -50,7 +50,6 @@ destroyTexture tid tmap = case M.lookup tid tmap of
                               R.destroyTexture txt
                               pure $ tmap'
 
-
 -- | Destruction de la map des textures
 destroyTextureMap :: TextureMap -> IO TextureMap
 destroyTextureMap tmap =
@@ -58,4 +57,3 @@ destroyTextureMap tmap =
   in do
     forM_ tids (\tid -> TextureMap.destroyTexture tid tmap)
     pure createTextureMap
-

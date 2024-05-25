@@ -263,7 +263,6 @@ getZoneWithId (Ville zones _) zid = case Map.lookup zid zones of
     Just z -> Just z
     _ -> Nothing
 
-
 -- Cette fonction verifie si des zones sont en collision dans une ville
 zonesCollision :: Ville -> Bool
 zonesCollision (Ville zones _) = any (\(z1, z2) -> collision (zoneForme z1) (zoneForme z2)) [(z1, z2) | z1 <- Map.elems zones, z2 <- Map.elems zones, z1 /= z2]
@@ -271,10 +270,10 @@ zonesCollision (Ville zones _) = any (\(z1, z2) -> collision (zoneForme z1) (zon
 -- Cette fonction renvoie toute les zones routieres d'une ville
 villeZoneRoutes :: Ville -> [Zone]
 villeZoneRoutes (Ville zones _) = filter (\z -> case z of Route _ -> True; _ -> False) (Map.elems zones)
+
 -- define Show ZoneId
 instance Show ZoneId where
     show (ZoneId i) = "ZoneId " ++ show i
-
 
 -- define Show for Ville 
 instance Show Ville where

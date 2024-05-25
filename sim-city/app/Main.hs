@@ -17,21 +17,15 @@ import Foreign.C.Types (CInt (..) )
 import SDL
 import SDL.Time (time, delay)
 import Linear (V4(..))
-
 import TextureMap (TextureMap, TextureId (..))
 import qualified TextureMap as TM
-
 import Sprite (Sprite)
 import qualified Sprite as S
-
 import SpriteMap (SpriteMap, SpriteId (..))
 import qualified SpriteMap as SM
-
 import Keyboard (Keyboard)
 import qualified Keyboard as K
 import qualified Mouse as Ms
-
-
 import qualified Debug.Trace as T
 
 import Componnent.Etat as E
@@ -68,7 +62,6 @@ spriteForm _ =  error "spriteForm not implemented for this type"
 
 loadComponnent :: Renderer-> FilePath -> TextureMap -> SpriteMap -> String -> Forme -> IO (TextureMap, SpriteMap)
 loadComponnent rdr path tmap smap id forme = do
-  putStrLn $ "Chargement de l'image: " <> path <> " avec l'id: " <> id
   tmap' <- TM.loadTexture rdr path (TextureId id) tmap
   let (a, b, c, d) = spriteForm forme
   let sprite = S.defaultScale $ S.addImage S.createEmptySprite $ S.createImage (TextureId id) (S.mkArea (fromIntegral a) (fromIntegral (b))  (fromIntegral c) (fromIntegral d))
@@ -94,7 +87,6 @@ rendererState renderer font txts = do
   let lineHeight = 20
   mapM_ (\(i, txt) -> displayText renderer font (pack txt) (V2 startX (startY + i * lineHeight)) (V4 255 255 255 255)) (zip [0..] txts)
 
-
 -- | affichage de texte sur le `renderer` SDL2 
 displayText :: R.Renderer -> TTF.Font -> Text -> V2 CInt -> V4 Word8 -> IO ()
 displayText rdr font txt pos color = do
@@ -110,8 +102,6 @@ main :: IO ()
 main = do
   initializeAll
   Font.initialize
-
-    -- faut télécharger SDL2_ttf pour que ça marche 
   font <- Font.load "assets/Nexa-Book.ttf" 17
 
   window <- createWindow "Minijeu" $ defaultWindow { windowInitialSize = V2 1200 800 }
@@ -138,7 +128,7 @@ displayState renderer tmap smap gameState = do
   Map.traverseWithKey (\k z -> 
     let (x,y,_,_) = spriteForm $ zoneForme z 
     in S.displaySprite renderer tmap (S.moveTo (SM.fetchSprite (SpriteId (show k)) smap) (fromIntegral x) (fromIntegral y))) (viZones ville)
-    -- Affichage des bâtiments
+  -- Affichage des batiments
   Map.traverseWithKey (\k z ->
     let (x,y,_,_) = spriteForm $ batimentForme z
     in do
@@ -147,8 +137,6 @@ displayState renderer tmap smap gameState = do
   Map.traverseWithKey (\k c ->
     let (C x y) = citoyenCoord c
     in do
-      -- on affiche sont batiment entre
-      putStrLn $"Citoyens" <> show c
       S.displaySprite renderer tmap (S.moveTo (SM.fetchSprite (SpriteId (show k)) smap) (fromIntegral x) (fromIntegral y))) citoyens
 
   return ()
@@ -168,8 +156,10 @@ gameLoop frameRate renderer tmap smap kbd gameState lstId nb font = do
 
   -- Affichage de l'état du jeu
   displayState renderer tmap' smap' gameState'
+  -- Affichage du menu
   menuItems <- menu
   renderMenuItems renderer font menuItems
+  -- Affichage de l'état du jeu
   rendererState renderer font $showEtat gameState'
   
   present renderer

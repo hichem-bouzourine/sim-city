@@ -6,9 +6,6 @@ import Componnent.Forme
 import Componnent.Utils
 import Componnent.Batiment (Batiment)
 
--- import Data.Map (Map)
--- import qualified Data.Map as Map
-
 data Occupation = Travailler | Dormir | FaireCourses | Deplacer Batiment (Maybe [Coord]) deriving (Show, Eq)
 
 -- Type représentant un citoyen avec ses informations spécifiques
