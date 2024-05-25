@@ -94,3 +94,7 @@ adjacentTest = do
       forAll arbitrary $ \c w h ->
         adjacent c (Rectangle c w h) == (cx(c) >= cx(c) - margin && cx(c) <= cx(c) + w + margin && (cy(c) >= cy(c) - margin && cy(c) <= cy(c) + h + margin))
 
+quickTests = do
+  limitesTest
+  appartientTest
+  adjacentTest

@@ -84,13 +84,16 @@ test-suite sim-city-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      BatimentQuickCheck
       BatimentSpec
+      CitoyenQuickCheck
       CitoyenSpec
       EnvironnementSpec
       FormeSpec
       FormQuickCheck
       GraphSpec
       VilleSpec
+      ZoneQuickCheck
       ZoneSpec
       Paths_sim_city
   autogen-modules:
