@@ -214,7 +214,7 @@ dFatigue :: Int
 dFatigue = 5
 
 cFaim :: Int
-cFaim = -1
+cFaim = 1
 
 -- define Show instance for Environnement
 instance Show Environnement where

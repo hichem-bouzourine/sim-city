@@ -196,17 +196,16 @@ prop_post_affecteBatimentCourse' (Habitant coord etat (mId, _, cId) occupation) 
 citoyenBatTarget :: Citoyen -> Batiment -> Citoyen
 citoyenBatTarget (Habitant coord etat (mId, tId, cId) _) batiment = Habitant coord etat (mId, tId, cId) (Deplacer batiment Nothing)
 
-
--- data Citoyen = Immigrant Coord (Int, Int, Int) Occupation
---             | Habitant Coord (Int, Int, Int) (BatId, Maybe BatId, Maybe BatId) Occupation
---             | Emigrant Coord Occupation
-
 -- Cette fonction permet de affecter un target de deplacement vers tout citoyen
 citoyenFindTarget :: Citoyen -> Batiment -> [Coord] -> Citoyen
 citoyenFindTarget (Habitant coord etat (mId, tId, cId) _) batiment path = Habitant coord etat (mId, tId, cId) (Deplacer batiment (Just path))
 citoyenFindTarget (Immigrant coord etat _) batiment path = Immigrant coord etat (Deplacer batiment (Just path))
 citoyenFindTarget (Emigrant coord _) batiment path = Emigrant coord (Deplacer batiment (Just path))
 
+-- Cette fonction permet de verifier si un citoyen est un Emigrant
+estEmigrant :: Citoyen -> Bool
+estEmigrant (Emigrant _ _) = True
+estEmigrant _ = False
 instance Show Citoyen where
     show ( Immigrant coord etat occupation ) =
         "Immigrant " ++ show coord ++ " " ++ show etat ++ " " ++ show occupation
@@ -216,5 +215,8 @@ instance Show Citoyen where
         "Habitant " ++ show coord ++ " " ++ show etat ++ " " ++ show batId ++ " " ++ show batId2 ++ " " ++ show occupation
     show ( Habitant coord etat (batId, Just batId2, Just batId3) occupation) =
         "Habitant " ++ show coord ++ " " ++ show etat ++ " " ++ show batId ++ " " ++ show batId2 ++ " " ++ show batId3 ++ " " ++ show occupation
+    show ( Habitant coord etat (batId, Nothing, Just bati) occupation) =
+        "Habitant " ++ show coord ++ " " ++ show etat ++ " " ++ show batId ++ " " ++ show bati ++ " " ++ show occupation
     show ( Emigrant coord occupation ) = "Emigrant " ++ show coord ++ " " ++ show occupation
+    
 

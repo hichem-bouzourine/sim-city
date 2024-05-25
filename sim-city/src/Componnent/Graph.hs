@@ -47,8 +47,8 @@ isRoute gameMap coord margin =
     in any (\c -> Map.lookup c gameMap `elem` [Just '#', Just '^']) surroundingCoords
 
 -- Fonction A* pour trouver le chemin le plus court entre deux points dans une carte
-aStar :: Map Coord Char -> Coord -> Coord -> Maybe [Coord]
-aStar gameMap start goal = reconstructPath <$> search
+aStar :: Map Coord Char -> Coord -> Coord -> Int-> Maybe [Coord]
+aStar gameMap start goal margin = reconstructPath <$> search
   where
     heuristic = manhattanDistance
 
@@ -62,7 +62,7 @@ aStar gameMap start goal = reconstructPath <$> search
         current = fst $ head queue
         currentScore = fromMaybe (error "current not in gScore") (Map.lookup current gScore)
 
-        validNeighbors = filter (\neighbor -> isRoute gameMap neighbor 100) (voisins current)
+        validNeighbors = filter (\neighbor -> isRoute gameMap neighbor margin) (voisins current)
         (openSet', queue', cameFrom', gScore') = foldr visit (Set.delete current openSet, tail queue, cameFrom, gScore) validNeighbors
 
         visit neighbor (openSet, queue, cameFrom, gScore) =

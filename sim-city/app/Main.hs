@@ -42,13 +42,24 @@ import Componnent.Citoyen as C
 import Componnent.Ville as V
 import Componnent.Environnement as Env
 import Componnent.Utils as U
-          
+import Data.Text (pack)
+import qualified SDL.Font as Font
+import SDL.Vect (V2(..), V4(..), Point(..))
+import qualified SDL.Video.Renderer as R
 
 -- import Model (GameState)
 import qualified Componnent.Moteur as M
 import SDL.Event (Event(Event), eventPayload, mouseButtonEventButton, mouseButtonEventPos)
 import GHC.Base (when)
 import System.Posix.Internals (puts)
+
+import qualified SDL
+import qualified SDL.Font as TTF
+import SDL.Vect (V2(..), V4(..), Point(..))
+import qualified SDL.Video.Renderer as R
+import Data.Text (Text)
+import Foreign.C.Types (CInt)
+import Data.Word (Word8)
 
 
 spriteForm :: Forme -> (Int, Int, Int, Int)
@@ -64,9 +75,45 @@ loadComponnent rdr path tmap smap id forme = do
   let smap' = SM.addSprite (SpriteId id) sprite smap
   return (tmap', smap')
 
+-- Menu info
+menu :: IO [String]
+menu = return ["Liste des actions Possible","---------------", "R pour route", "E pour eau", "I pour industrie", "M pour commerce", "V pour residentiel", "A pour administration", "G pour epicerie", "K pour cabane", "W pour atelier", "C pour citoyen"]
+
+renderMenuItems :: SDL.Renderer -> Font.Font -> [String] -> IO ()
+renderMenuItems renderer font menuItems = do
+  -- Espacement vertical entre chaque élément du menu
+  let spacing = 30
+  -- Génération des positions pour chaque élément du menu avec l'espacement
+  let positions = [V2 10 (10 + fromIntegral i * spacing) | i <- [0..(length menuItems - 1)]]
+  mapM_ (\(item, pos) -> displayText renderer font (pack item) pos (V4 0 255 255 255)) (zip menuItems positions)
+
+rendererState :: Renderer -> Font.Font -> [String] -> IO ()
+rendererState renderer font txts = do
+  let startX = 1000
+  let startY = 10
+  let lineHeight = 20
+  mapM_ (\(i, txt) -> displayText renderer font (pack txt) (V2 startX (startY + i * lineHeight)) (V4 255 255 255 255)) (zip [0..] txts)
+
+
+-- | affichage de texte sur le `renderer` SDL2 
+displayText :: R.Renderer -> TTF.Font -> Text -> V2 CInt -> V4 Word8 -> IO ()
+displayText rdr font txt pos color = do
+  surface <- TTF.solid font color txt
+  texture <- R.createTextureFromSurface rdr surface
+  V2 w h <- SDL.surfaceDimensions surface
+  let destRect = R.Rectangle (P pos) (V2 w h)
+  R.copy rdr texture Nothing (Just destRect)
+  SDL.freeSurface surface
+  R.destroyTexture texture
+
 main :: IO ()
 main = do
   initializeAll
+  Font.initialize
+
+    -- faut télécharger SDL2_ttf pour que ça marche 
+  font <- Font.load "assets/Nexa-Book.ttf" 17
+
   window <- createWindow "Minijeu" $ defaultWindow { windowInitialSize = V2 1200 800 }
   renderer <- createRenderer window (-1) defaultRenderer
   -- chargement de l'image du fond
@@ -76,7 +123,7 @@ main = do
   -- initialisation de l'état du clavier
   let kbd = K.createKeyboard
   -- lancement de la gameLoop
-  gameLoop 60 renderer tmap smap kbd gameState 0 0
+  gameLoop 60 renderer tmap smap kbd gameState 0 0 font
 
 displayState :: Renderer -> TextureMap -> SpriteMap -> Etat -> IO ()
 displayState renderer tmap smap gameState = do
@@ -100,18 +147,16 @@ displayState renderer tmap smap gameState = do
   Map.traverseWithKey (\k c ->
     let (C x y) = citoyenCoord c
     in do
-      putStrLn $ "<<<<<<<<Coordonnee de du citoyen>>>>> " <> show k <> ": " <> show x <> ", " <> show y
-      putStrLn $ "<<<<<<<Occupation du citoyen>>>>>> " <> show (citoyenOccupation c)
       -- on affiche sont batiment entre
+      putStrLn $"Citoyens" <> show c
       S.displaySprite renderer tmap (S.moveTo (SM.fetchSprite (SpriteId (show k)) smap) (fromIntegral x) (fromIntegral y))) citoyens
 
-  
   return ()
 
 
 
-gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard -> Etat -> Int -> Int-> IO ()
-gameLoop frameRate renderer tmap smap kbd gameState lstId nb = do
+gameLoop :: (RealFrac a, Show a) => a -> Renderer -> TextureMap -> SpriteMap -> Keyboard -> Etat -> Int -> Int-> Font.Font -> IO ()
+gameLoop frameRate renderer tmap smap kbd gameState lstId nb font = do
   startTime <- time
   events <- pollEvents
   let kbd' = K.handleEvents events kbd
@@ -123,7 +168,10 @@ gameLoop frameRate renderer tmap smap kbd gameState lstId nb = do
 
   -- Affichage de l'état du jeu
   displayState renderer tmap' smap' gameState'
-
+  menuItems <- menu
+  renderMenuItems renderer font menuItems
+  rendererState renderer font $showEtat gameState'
+  
   present renderer
   -- Calcul du délai pour maintenir le framerate
   endTime <- time
@@ -138,11 +186,9 @@ gameLoop frameRate renderer tmap smap kbd gameState lstId nb = do
       Just (x, y) -> putStrLn $ "Coordonnee de la souris: " <> (show x) <> ", " <> (show y)
       Nothing -> putStrLn "Coordonnee de la souris: Nothing")
 
-  when (id' /= lstId)
-    (afficheGame gameState'')
   let gameState''' = M.tourEtat gameState'' kbd' deltaTime
   -- showEtat gameState'''
-  unless (K.keypressed KeycodeEscape kbd') $ gameLoop frameRate renderer tmap' smap' kbd' gameState''' id' (nb+1)
+  unless (K.keypressed KeycodeEscape kbd') $ gameLoop frameRate renderer tmap' smap' kbd' gameState''' id' (nb+1) font
 
 -- Définition de la fonction updateAction
 updateAction :: Etat -> Keyboard -> Int -> TextureMap -> SpriteMap -> Renderer -> IO (Int, Etat, TextureMap, SpriteMap)
@@ -286,6 +332,3 @@ buildComponent kbd start end id etat@(Etat n env coin _ lmp) tmap smap renderer 
                                   putStrLn "Error Key not supported c"
                                   let etat' = updateLastMousePosition (updateSelected etat Nothing) Nothing
                                   return (id, etat', tmap, smap)
-
-afficheGame :: Etat -> IO ()
-afficheGame etat =  putStrLn $ showEtat etat

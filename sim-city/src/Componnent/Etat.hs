@@ -38,7 +38,7 @@ updateLastMousePosition (Etat n env coin kbd _) lmp = Etat n env coin kbd lmp
 addImmigrant :: Int -> Coord -> Etat -> Etat
 addImmigrant id c e@(Etat n env coin _ lmp) = 
     let cityoen = case (getCommissariats env, isRoadPoint env c) of
-                    (Just (_, com), True) -> Just $ Immigrant c (50, 50, 50) $ Deplacer com Nothing
+                    (Just (_, com), True) -> Just $ Immigrant c (50, 1000, 1000) $ Deplacer com Nothing
                     _ -> Nothing
     in case cityoen of
         -- Si on a une voie ou débarquer l'immigrant et un commissariat pour l'intégrer
@@ -48,14 +48,17 @@ addImmigrant id c e@(Etat n env coin _ lmp) =
 
 
 -- Cette fonction permet de representer un Etat
-showEtat :: Etat -> String
-showEtat etat = "Tour :" ++ show (tourNB etat) ++", NB Poppulation "++ 
-    show (nombreCitoyensTravail (envVille (environnement etat))) ++ ", NB de chomage :" 
-    ++ show (tauxChomage (envVille (environnement etat))) ++ ", NB client epicerie :" 
-    ++ show (nombreCitoyensCourses (eville (environnement etat))) ++ ", NB Zoned :" 
-    ++ show (Map.size (viZones (eville (environnement etat)))) ++ ", NB Batiments :" 
-    ++ show (Map.size (envBatiments (environnement etat))) ++ "\n"
-    -- ++ showEnvironment (environnement etat)
+showEtat :: Etat -> [String]
+showEtat etat = 
+    [ "NB Poppulation: " ++ show (Map.size $ viCit (envVille (environnement etat)))
+    , "NB de chomage: " ++ show (tauxChomage (envVille (environnement etat)))
+    , "NB client epicerie: " ++ show (nombreCitoyensCourses (eville (environnement etat)))
+    , "NB Zone: " ++ show (Map.size (viZones (eville (environnement etat))))
+    , "NB Batiments: " ++ show (Map.size (envBatiments (environnement etat)))
+    , "Coin: " ++ show (coin etat)
+    , "Selected: " ++ show (selected etat)
+    , "Tour: " ++ show (tourNB etat)
+    ]
 
 --  Update the occupation of citizens based on their conditions
 updateOccCitoyens :: Environnement -> Environnement
@@ -71,14 +74,14 @@ updateOccCitoyens env@(Env h w envBat v@(Ville zones citoyens) carte) = Env h w 
             then updateOccCitoyen' c (getBatIdFromBatiment b env)                       -- Il met à jour son ocupation
             else updateMove c b p                                                  -- Sinon il continue de se déplacer
         _ -> c
-
+        
     updateForWork c
-        | citoyenFatigue c == 0 = case citoyenBatimentRepos c of                           -- Si le citoyen est fatigué il se dirige vers sa maison pour se reposer
+        | citoyenFatigue c <= 0 = case citoyenBatimentRepos c of                           -- Si le citoyen est fatigué il se dirige vers sa maison pour se reposer
             Just m -> citoyenBatTarget c (getBatimentWithId env m)
-            _ -> c  -- a revoir
-        | citoyenFaim c == 0 && citoyenArgent c > 0 = case citoyenBatimentCourse c of      -- Si le citoyen a faim il se dirige vers son batiment de course s'il dispose d'argent
+            _ -> c  
+        | citoyenFaim c <= 0 && citoyenArgent c > 0 = case citoyenBatimentCourse c of      -- Si le citoyen a faim il se dirige vers son batiment de course s'il dispose d'argent
                 Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
-                _ -> c -- a revoir                         
+                _ -> c                          
     updateForWork c = c                                                                    -- Autrement il continue de travailler
 
     updateForShopping c
@@ -87,18 +90,21 @@ updateOccCitoyens env@(Env h w envBat v@(Ville zones citoyens) carte) = Env h w 
             Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
             _ -> case citoyenBatimentTravail c of                                          -- Autrement il se dirige vers son batiment de travail si possible
                 Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
-                _ ->  c -- a revoir
+                _ ->  c 
 
     updateForSleeping c
         | citoyenFatigue c < maxEnergie = c                                                -- il se repose tanqu'il n'ai pas en forme
         | otherwise = case citoyenBatimentTravail c of                                     -- Autrement il se dirige vers son batiment de travail si possible
             Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
-            _ -> c -- a revoir
+            _ -> case citoyenBatimentCourse c of                                           -- Autrement il se dirige vers son batiment de course si possible
+                Just ident -> citoyenBatTarget c (getBatimentWithId env ident)
+                _ -> c
 
     updateOccCitoyen' c bId
+        | bId == citoyenBatimentRepos c = citoyenUpdateOccupation c Dormir                  -- Si le citoyen est arrivé à sa maison il se repose
         | bId == citoyenBatimentCourse c = citoyenUpdateOccupation c FaireCourses           -- Si le citoyen est arrivé à son batiment de course il fait les courses
         | bId == citoyenBatimentTravail c = citoyenUpdateOccupation c Travailler            -- Si le citoyen est arrivé à son batiment de travail il travaille
-        | otherwise = c -- Sinon il y reste (cas a voire)
+        | otherwise = c 
 
     -- on va utuliser la carte pour trouver le plus cours chemin entre la position du citoyen et l'entree du batimet la ou il doit se deplacer
     -- retourne la coordener voisine du citoyen dans la direction du plus cours chemin
@@ -106,12 +112,12 @@ updateOccCitoyens env@(Env h w envBat v@(Ville zones citoyens) carte) = Env h w 
     updateMove :: Citoyen -> Batiment -> Maybe [Coord] -> Citoyen
     updateMove c b p = case p of 
                         (Just (x:xs)) -> updateCitoyenPosition (citoyenFindTarget c b xs) x
-                        _-> case  aStar (initMap v) (citoyenCoord c) (batimentEntree b) of 
+                        _-> case  aStar (initMap v) (citoyenCoord c) (batimentEntree b) 50 of 
                             Just a -> updateCitoyenPosition (citoyenFindTarget c b $ tail (reverse a) ++ [batimentEntree b]) $ last a
                             _ -> c
                         _ -> c
-maxFaim = 10
-maxEnergie = 10
+maxFaim = 100
+maxEnergie = 100
 
 
 -- cette fonction permet met a jour l'etat(argent, fatigue, famine) d'un citoyen en fonction de son occupation
@@ -119,10 +125,12 @@ metAJourEtaCitoyen :: Citoyen -> Citoyen
 metAJourEtaCitoyen (Habitant coord (etat1, etat2, etat3) (mId, tId, cId) Travailler) =
     Habitant coord (etat1 + wGain, etat2 + wFaim, etat3 + wFatigue) (mId, tId, cId) Travailler
 metAJourEtaCitoyen (Habitant coord (etat1, etat2, etat3) (mId, tId, cId) FaireCourses) =
-    Habitant coord (etat1, etat2 + cFaim, etat3) (mId, tId, cId) FaireCourses
+    Habitant coord (etat1, etat2, etat3 + cFaim) (mId, tId, cId) FaireCourses
 metAJourEtaCitoyen (Habitant coord (etat1, etat2, etat3) (mId, tId, cId) Dormir) =
-    Habitant coord (etat1, etat2, etat3 + dFatigue) (mId, tId, cId) Dormir
+    Habitant coord (etat1, etat2 + dFatigue, etat3) (mId, tId, cId) Dormir
     -- il manque les autres type de citoyen a gerer 
+metAJourEtaCitoyen (Immigrant coord (etat1, etat2, etat3) occupation) = 
+    Immigrant coord (etat1 + wGain, etat2 + wFaim, etat3 + wFatigue) occupation
 metAJourEtaCitoyen c = c
 
 -- Cette fonction permet d'effectuer la transistion administrative
@@ -140,9 +148,11 @@ updateAdminstration env@(Env h w envBat (Ville zones citoyens) carte) =
         transitionAdministrative' :: Citoyen -> Citoyen
         transitionAdministrative' c = case citoyenOccupation c of
             Deplacer b _ -> if citoyenCoord c == batimentEntree b then
-                case getBatimentRepos env of
-                    Just (bid, b) -> Habitant (citoyenCoord c) (50, 0, 0) (bid, Nothing, Nothing) $ Deplacer b Nothing
-                    _ -> Emigrant (citoyenCoord c) Dormir
+                case (getBatimentRepos env, c)  of
+                    (Just (bid, b), (Immigrant _ _ _))  -> Habitant (citoyenCoord c) (50, 0, 0) (bid, Nothing, Nothing) $ Deplacer b Nothing
+                    (_, (Habitant _ _ _ _)) -> c
+                    (_, (Immigrant _ _ _)) -> Emigrant (citoyenCoord c) Dormir
+                    _ -> c
                 else c
             _ -> c
             
@@ -213,9 +223,10 @@ cleanEnv :: Environnement -> Environnement
 cleanEnv env = Map.foldrWithKey aux env (viCit (envVille env))
     where
         aux :: CitId -> Citoyen -> Environnement -> Environnement
-        aux cId citoyen acc = case citoyenEtat citoyen of
-            Just (x, y, z) -> if x < 0 || y < 0 || z < 0 then retireCitoyen acc cId else acc
-            _ -> acc
+        aux cId citoyen acc = 
+            if estEmigrant citoyen
+                then retireCitoyen acc cId else acc
+            
             
 -- Affecte un bâtiment de travail à un habitant, si possible
 affecteBatimentTravail :: Environnement -> BatId -> CitId -> Environnement

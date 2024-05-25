@@ -70,7 +70,7 @@ initAtelier  f c cap = if adjacent c f && cap > 0  &&       -- si l'entree est a
                 case f of 
                     Rectangle {} -> True                  -- Les batiments ne peuvent etre que des rectangles
                     _ -> False
-                    then Just (Cabane f c cap [])
+                    then Just (Atelier f c cap [])
                     else Nothing
 
 -- Cette fonction permet d'initialiser une epicerie
@@ -79,7 +79,7 @@ initEpicerie f c cap = if adjacent c f && cap > 0  &&       -- si l'entree est a
                 case f of 
                     Rectangle {} -> True                  -- Les batiments ne peuvent etre que des rectangles
                     _ -> False
-                    then Just (Cabane f c cap [])
+                    then Just (Epicerie f c cap [])
                     else Nothing
 
 -- Cette fonction permet d'initialiser un commissariat

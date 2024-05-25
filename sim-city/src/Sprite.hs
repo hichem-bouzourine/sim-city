@@ -93,4 +93,8 @@ displaySprite rdr tmap sp@(Sprite imgs cur dest) =
       let txt = TM.fetchTexture tid tmap
       R.copy rdr txt Nothing (Just dest)
 
-
+-- | affichage de texte sur le `renderer` SDL2 
+displayText :: Renderer -> TextureMap -> TextureId -> CInt -> CInt -> IO ()
+displayText rdr tmap tid x y = do
+  let txt = TM.fetchTexture tid tmap
+  R.copy rdr txt Nothing (Just (mkArea x y 0 0))
