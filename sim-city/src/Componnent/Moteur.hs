@@ -27,7 +27,7 @@ tourEtat (Etat n env c h l) kbd time =
         nextEnv = case newEnv of
             (Env h w envBatiments v m) ->
                 Env h w envBatiments v (initMap v)
-    in Etat (n+1) (cleanEnv $ affecteBatiment $ updateAdminstration nextEnv) c h l     -- On incrémente le nombre de tours on relance l'administration
+    in updateImpots $ Etat (n+1) (cleanEnv $ affecteBatiment $ updateAdminstration nextEnv) c h l     -- On incrémente le nombre de tours on relance l'administration
                                                                                        -- On reassigne les batiments disponibles 
                                                                                         -- On nettoie l'environnement
                                                                                         

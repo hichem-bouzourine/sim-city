@@ -133,6 +133,23 @@ metAJourEtaCitoyen (Immigrant coord (etat1, etat2, etat3) occupation) =
     Immigrant coord (etat1 + wGain, etat2 + wFaim, etat3 + wFatigue) occupation
 metAJourEtaCitoyen c = c
 
+-- Cette fonction permet de prelever des impots sur un facteur de temps donnée 
+-- elle preleve 10% de l'argent de chaque citoyen et les rajoute au coin de l'etat
+-- elle retourne l'environnement mis a jour
+updateImpots :: Etat -> Etat
+updateImpots e@(Etat n env coin s c) = 
+    -- si le tour n est un multipl 1217 
+    if n `mod` 1217 /= 0 then e else
+        Etat n env' (coin + impots) s c
+        where
+            impots = Map.foldr (\citoyen acc -> let a = citoyenArgent(citoyen) in acc + (a `div` 10)) 0 citoyens
+            citoyens' = Map.map citoyenPreleveImpots citoyens
+            Env h w envBat (Ville zones citoyens) carte = env
+            env' = Env h w envBat (Ville zones citoyens') carte
+
+            citoyenPreleveImpots :: Citoyen -> Citoyen
+            citoyenPreleveImpots citoyen = let a = citoyenArgent citoyen in citoyenUpdateArgent citoyen (a - (a `div` 10))
+
 -- Cette fonction permet d'effectuer la transistion administrative
 -- Si un Immigration est a arriver a la porte d'entré du batiment ou il se deplaçait 
 -- on chercher cherche s'il exitste une maison de disponible dans la liste des batiments de repos
