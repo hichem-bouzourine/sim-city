@@ -142,17 +142,29 @@ putBatimentWithId bid bat (Env h w b v m) = Env h w (Map.insert bid bat b) v m
 getBatimentTravail :: Environnement -> Maybe (BatId, Batiment)
 getBatimentTravail env = Map.foldrWithKey (\k b acc -> if estBatimentTravail b then Just (k, b) else acc) Nothing (envBatiments env)
 
--- Cette fonction renvoie un batiment de repos disponible dans la liste des batiments
+-- Cette fonction renvoie le dernier batiment de repos disponible dans la liste des batiments
 getBatimentRepos :: Environnement -> Maybe (BatId, Batiment)
-getBatimentRepos env = Map.foldrWithKey (\k b acc -> if estBatimentRepos b then Just (k, b) else acc) Nothing (envBatiments env)
+getBatimentRepos env = Map.foldrWithKey (\k b acc -> 
+    if estBatimentRepos b && case acc of
+                            Nothing -> True
+                            _ -> False
+                            then Just (k, b) else acc) Nothing (envBatiments env)
 
--- Cette fonction renvoie un batiment de course disponible dans la liste des batiments
+-- Cette fonction renvoie le dernier batiment de commerce disponible dans la liste des batiments
 getBatimentCourse :: Environnement -> Maybe (BatId, Batiment)
-getBatimentCourse env = Map.foldrWithKey (\k b acc -> if estBatimentCommerce b then Just (k, b) else acc) Nothing (envBatiments env)
+getBatimentCourse env = Map.foldrWithKey (\k b acc -> 
+    if estBatimentCommerce b && case acc of
+                                    Nothing -> True
+                                    _ -> False
+                                    then Just (k, b) else acc) Nothing (envBatiments env)
 
--- Cette fonction renvoie les commissariats dans la liste des batiments
+-- Cette fonction renvoie le dernier batiment de commissariat disponible dans la liste des batiments
 getCommissariats :: Environnement -> Maybe  (BatId, Batiment)
-getCommissariats env = Map.foldrWithKey (\k b acc -> if estBatimentCommissariat b then Just (k, b) else acc) Nothing (envBatiments env)
+getCommissariats env = Map.foldrWithKey (\k b acc -> 
+    if estBatimentCommissariat b && case acc of
+                                    Nothing -> True
+                                    _ -> False
+                                    then Just (k, b) else acc) Nothing (envBatiments env)
 
 -- Cette fonction renvoie une coordonner d'une route pour au hasard dans la ville
 isRoadPoint :: Environnement -> Coord -> Bool

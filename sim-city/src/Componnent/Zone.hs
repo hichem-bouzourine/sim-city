@@ -121,7 +121,6 @@ construitZone zone b
     | b `elem` zoneBatiments zone = Just $ updateZoneBtiment zone b     -- Le bâtiment existe déjà, on le met à jour
     | any (collision (batimentForme b) . batimentForme) (zoneBatiments zone) = Just zone  -- Il y a une collision
     |
-     adjacentes (batimentForme b) (zoneForme zone) &&                           -- Le bâtiment est adjacent à la zone                            
                                    -- Le bâtiment est adjacent à la zone 
         batimentEntree b `adjacent` zoneForme zone  &&     -- et l'entree doit etre aussi adjacente    
         -- Les cabanes/ateliers/epiceries ne se trouvent que dans les zones r ́esidentielles/industrielles/commerciales.

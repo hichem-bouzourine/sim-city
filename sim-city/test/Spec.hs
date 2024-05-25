@@ -8,6 +8,7 @@ import CitoyenSpec as CS
 import EnvironnementSpec as ES
 import GraphSpec as GS
 import FormQuickCheck as FQ
+import BatimentQuickCheck as BQ
 
 main :: IO ()
 main = hspec $ do
@@ -18,3 +19,4 @@ main = hspec $ do
     -- ES.environnementSpec
     -- GS.graphSpec
     FQ.limitesTest
+    BQ.batimentQuickCheckTests

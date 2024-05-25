@@ -90,7 +90,7 @@ collision  f1 f2 = let bordure = formeBordure f1
 -- une fonction adjacentes :: Forme -> Forme -> Bool qui prend en entr´ee deux formes et d´ecide si les deux formes sont adjacentes 
 -- (c’est-`a-dire si elles se touchent sans se superposer).
 adjacentes :: Forme -> Forme -> Bool
-adjacentes f1 f2 = (formesAdjacent f1 f2 || formesAdjacent f2 f1)
+adjacentes f1 f2 = not (contenue f1 f2 ) && (formesAdjacent f1 f2 || formesAdjacent f2 f1)
 
 -- Cette fonction renvoie toutes les coordonnées de la bordure d'une forme
 formeBordure :: Forme -> Seq Coord

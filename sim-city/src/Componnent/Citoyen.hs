@@ -164,7 +164,7 @@ prop_post_transformeEnEmigrant _ _ = False  -- La postcondition ne s'applique pa
 
 -- cette fonction permet d'assingner un batiment de travail à un habitant
 affecteBatimentTravail' :: Citoyen -> BatId -> Citoyen
-affecteBatimentTravail' (Habitant coord etat (batId, _, _) _) batId' = Habitant coord etat (batId, Just batId', Nothing) Travailler
+affecteBatimentTravail' (Habitant coord etat (batId, _, b) _) batId' = Habitant coord etat (batId, Just batId', b) Travailler
 affecteBatimentTravail' c _ = c
 -- Précondition pour l'affectation d'un bâtiment de travail
 prop_pre_affecteBatimentTravail' :: Citoyen -> BatId -> Bool
