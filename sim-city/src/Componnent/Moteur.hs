@@ -30,6 +30,7 @@ tourEtat (Etat n env c h l) kbd time =
     in updateImpots $ Etat (n+1) (cleanEnv $ affecteBatiment $ updateAdminstration nextEnv) c h l     -- On incrémente le nombre de tours on relance l'administration
                                                                                        -- On reassigne les batiments disponibles 
                                                                                         -- On nettoie l'environnement
+                                                                                        -- On preleve les impots si necessaire
                                                                                         
 
   

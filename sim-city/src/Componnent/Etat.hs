@@ -133,7 +133,7 @@ metAJourEtaCitoyen (Immigrant coord (etat1, etat2, etat3) occupation) =
     Immigrant coord (etat1 + wGain, etat2 + wFaim, etat3 + wFatigue) occupation
 metAJourEtaCitoyen c = c
 
--- Cette fonction permet de prelever des impots sur un facteur de temps donnée 
+-- Cette fonction permet de prelever des impots sur un facteur de temps donnée qui est ici 1217
 -- elle preleve 10% de l'argent de chaque citoyen et les rajoute au coin de l'etat
 -- elle retourne l'environnement mis a jour
 updateImpots :: Etat -> Etat
