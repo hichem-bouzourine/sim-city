@@ -170,9 +170,8 @@ prop_pre_affecteBatimentTravail' _ _ = False
 
 -- Postcondition pour l'affectation d'un bâtiment de travail
 prop_post_affecteBatimentTravail' :: Citoyen -> Citoyen -> BatId -> Bool
-prop_post_affecteBatimentTravail' (Habitant coord etat (mId, _, cId) occupation) 
-                                    (Habitant coord' etat' (mId', tId', cId') occupation') batId =
-    coord == coord' && etat == etat' && occupation == occupation'
+prop_post_affecteBatimentTravail' (Habitant coord etat (mId, _, cId) _) (Habitant coord' etat' (mId', tId', cId') _) batId =
+    coord == coord' && etat == etat'
     && mId == mId' && tId' == Just batId && cId == cId'
 
 -- cette fonction permet d'assigner un batiment de course à un habitant

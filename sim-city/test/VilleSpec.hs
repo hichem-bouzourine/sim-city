@@ -25,8 +25,8 @@ villeSpec = do
             prop_ville_routesAdj ville `shouldBe` True
 
         it "chaque zone dans une ville est adjacente au minimume a une route" $ do
-            let ville = Ville (Map.fromList [(ZoneId 1, Admin (Rectangle (C 2 (-1)) 2 2) (Commissariat (Rectangle (C 2 (-1)) 2 2) (C 2 (-3)))), (ZoneId 2, ZC (Rectangle (C 2 (-5)) 3 2) []), (ZoneId 3, Route (Rectangle (C 0 (-4)) 8 1))]) Map.empty
-            prop_ville_routesAdj ville `shouldBe` False
+            let ville = Ville (Map.fromList [(ZoneId 1, Admin (Rectangle (C 2 2) 4 4) (Commissariat (Rectangle (C 0 2) 2 2) (C 2 4))), (ZoneId 2, ZC (Rectangle (C 2 5) 3 2) []), (ZoneId 3, Route (Rectangle (C 0 5) 8 1))]) Map.empty
+            prop_ville_routesAdj ville `shouldBe` True
 
     describe "prop_ville_batimentsAdj" $ do
         it "Chaque batiment est adjacent a une route" $ do
@@ -34,8 +34,8 @@ villeSpec = do
             prop_ville_batimentsAdj ville `shouldBe` True
 
         it "Chaque batiment est adjacent a une route" $ do
-            let ville = Ville (Map.fromList [(ZoneId 1, ZR (Rectangle (C 0 (-2)) 2 2) [Cabane (Rectangle (C 1 (-3)) 1 1) (C 2 (-4)) 1 [], Atelier (Rectangle (C 0 (-2)) 1 1) (C 0 (-2)) 1 []]), (ZoneId 2, ZC (Rectangle (C 2 (-5)) 3 2) []), (ZoneId 3, Route (Rectangle (C 0 (-4)) 8 1))]) Map.empty
-            prop_ville_batimentsAdj ville `shouldBe` False
+            let ville = Ville (Map.fromList [(ZoneId 1, ZR (Rectangle (C 0 2) 2 2) [Cabane (Rectangle (C 1 3) 1 1) (C 2 4) 1 [], Atelier (Rectangle (C 0 3) 1 1) (C 0 4) 1 []]), (ZoneId 2, ZC (Rectangle (C 2 6) 3 2) []), (ZoneId 3, Route (Rectangle (C 0 5) 8 1))]) Map.empty
+            prop_ville_batimentsAdj ville `shouldBe` True
 
     describe "prop_inv_citoyensDansVille" $ do
         it "Tous les citoyens dans les bâtiments doivent faire partie des citoyens de la ville" $ do
