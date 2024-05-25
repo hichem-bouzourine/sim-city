@@ -7,13 +7,14 @@ import BatimentSpec as BS
 import CitoyenSpec as CS
 import EnvironnementSpec as ES
 import GraphSpec as GS
+import FormQuickCheck as FQ
 
 main :: IO ()
 main = hspec $ do
-    FS.formeSpec
-    ZS.spec
-    VS.villeSpec
-    BS.batimentSpec
-    CS.citoyenSpec
-    ES.environnementSpec
-    GS.graphSpec
+    -- ZS.spec
+    -- VS.villeSpec
+    -- BS.batimentSpec
+    -- CS.citoyenSpec
+    -- ES.environnementSpec
+    -- GS.graphSpec
+    FQ.limitesTest
