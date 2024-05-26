@@ -152,22 +152,6 @@ construitZoneAdminTest = do
     genRectangleForme = Rectangle <$> arbitrary <*> arbitrary <*> arbitrary
 
 
-
--- addBatimentToZoneTest = do
---     describe "addBatimentToZone" $ do
---         it "ajoute un batiment à une zone" $ property $
---             forAll arbitrary $ \zone batiment ->
---                 prop_pre_updateZoneBtiment_valid zone batiment ==>
---                 prop_post_updateZoneBtiment_valid zone batiment
-
-
--- updateZoneBtimentTest = do
---     describe "updateZoneBtiment" $ do
---         it "met à jour un batiment dans une zone" $ property $
---             forAll arbitrary $ \zone batiment ->
---                 prop_pre_updateZoneBtiment_valid zone batiment ==>
---                 prop_post_updateZoneBtiment_valid zone batiment
-
 zoneConformeTest = do
     describe "zoneConforme" $ do
         it "vérifie si une zone est conforme" $ property $
