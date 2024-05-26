@@ -264,8 +264,6 @@ buildComponent kbd start end id etat@(Etat n env coin _ lmp) tmap smap renderer 
                     putStrLn $ "Construction d'une zone administrative " ++ show start
                     (tmap', smap') <- loadComponnent renderer "assets/administration.bmp" tmap smap ("ZoneId " ++ show id) (zoneForme a)
                     (tmap'', smap'') <- loadComponnent renderer "assets/police.bmp" tmap' smap' ("BatId " ++ show id) (zoneForme a)
-                    putStrLn $ "<<Batiment entre>> " ++ show (batimentEntree(head (zoneBatiments a)))
-                    putStrLn $ "<<Batiment head>> " ++ show (head (zoneBatiments a))
                     case envAddZone (ZoneId id) a env of 
                       Just newEnv -> do
                           case envAddBatiment (BatId id) (head (zoneBatiments a)) (ZoneId id) newEnv of 

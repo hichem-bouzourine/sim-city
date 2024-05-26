@@ -33,3 +33,10 @@ stack run
 
 Pour le lancer...
 
+
+## Membre du Groupe
+21319982 : Hichem Bouzourine
+21314820 : Elhadj Alseiny Diallo
+
+## Lien github
+https://stl.algo-prog.info/21319982/projet-paf.git

@@ -112,7 +112,7 @@ updateOccCitoyens env@(Env h w envBat v@(Ville zones citoyens) carte) = Env h w 
     updateMove :: Citoyen -> Batiment -> Maybe [Coord] -> Citoyen
     updateMove c b p = case p of 
                         (Just (x:xs)) -> updateCitoyenPosition (citoyenFindTarget c b xs) x
-                        _-> case  aStar (initMap v) (citoyenCoord c) (batimentEntree b) 50 of 
+                        _-> case  aStar (initMap v) (citoyenCoord c) (batimentEntree b) 30 of 
                             Just a -> updateCitoyenPosition (citoyenFindTarget c b $ tail (reverse a) ++ [batimentEntree b]) $ last a
                             _ -> c
                         _ -> c
