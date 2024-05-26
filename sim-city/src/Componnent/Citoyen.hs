@@ -201,7 +201,8 @@ citoyenFindTarget (Emigrant coord _) batiment path = Emigrant coord (Deplacer ba
 
 -- Mettre à jour l'argent d'un citoyen
 citoyenUpdateArgent :: Citoyen -> Int -> Citoyen
-citoyenUpdateArgent (Habitant coord (etat1, etat2, etat3) (mId, tId, cId) occ) argent = Habitant coord (argent, etat2, etat3) (mId, tId, cId) occ 
+citoyenUpdateArgent (Habitant coord (etat1, etat2, etat3) (mId, tId, cId) occ) argent = Habitant coord (argent, etat2, etat3) (mId, tId, cId) occ
+citoyenUpdateArgent c _ = c
 
 -- Cette fonction permet de verifier si un citoyen est un Emigrant
 estEmigrant :: Citoyen -> Bool

@@ -78,14 +78,14 @@ renderMenuItems renderer font menuItems = do
   let spacing = 30
   -- Génération des positions pour chaque élément du menu avec l'espacement
   let positions = [V2 10 (10 + fromIntegral i * spacing) | i <- [0..(length menuItems - 1)]]
-  mapM_ (\(item, pos) -> displayText renderer font (pack item) pos (V4 0 255 255 255)) (zip menuItems positions)
+  mapM_ (\(item, pos) -> displayText renderer font (pack item) pos (V4 0 0 0 255)) (zip menuItems positions)
 
 rendererState :: Renderer -> Font.Font -> [String] -> IO ()
 rendererState renderer font txts = do
   let startX = 1000
   let startY = 10
   let lineHeight = 20
-  mapM_ (\(i, txt) -> displayText renderer font (pack txt) (V2 startX (startY + i * lineHeight)) (V4 255 255 255 255)) (zip [0..] txts)
+  mapM_ (\(i, txt) -> displayText renderer font (pack txt) (V2 startX (startY + i * lineHeight)) (V4 0 0 0 255)) (zip [0..] txts)
 
 -- | affichage de texte sur le `renderer` SDL2 
 displayText :: R.Renderer -> TTF.Font -> Text -> V2 CInt -> V4 Word8 -> IO ()
